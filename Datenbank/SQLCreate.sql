@@ -31,19 +31,22 @@ CREATE TABLE Messorte (
 DROP TABLE IF EXISTS Messpunkte;
 CREATE TABLE Messpunkte (
     mp_id INT PRIMARY KEY,
-    mp_messgroesse INT,
+    mp_einheit VARCHAR(255),
     mp_name VARCHAR(255) Unique
 );
 
 --
 -- Tabelle Messgroessen
 --
+
+/*
 DROP TABLE IF EXISTS Messgroessen;
 CREATE TABLE Messgroessen (
     mg_id INT PRIMARY KEY,
     mg_name VARCHAR(255) UNIQUE,
     mg_einheit VARCHAR(255)
 );
+*/
 
 --
 -- Tabelle Messwerte
@@ -65,11 +68,15 @@ ALTER TABLE Messorte
     MODIFY mo_id INT NOT NULL AUTO_INCREMENT;
 
 ALTER TABLE Messpunkte
+    /*
     ADD CONSTRAINT FK_MP2MG FOREIGN KEY (mp_messgroesse) REFERENCES Messgroessen(mg_id),
+    */
     MODIFY mp_id INT NOT NULL AUTO_INCREMENT;
 
+/*
 ALTER TABLE Messgroessen
     MODIFY mg_id INT NOT NULL AUTO_INCREMENT;
+*/
 
 ALTER TABLE Messwerte
     ADD CONSTRAINT FK_MW2MP FOREIGN KEY (mw_messpunkt) REFERENCES Messpunkte(mp_id),
