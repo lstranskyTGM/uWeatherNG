@@ -9,16 +9,22 @@
 </head>
 
 
-<body>
+<body data-bs-theme="dark">
 <div style="background-color: #424242;height: 2cm;border-width: 1px 0">
     <div class="d-flex align-items-center" style="height: 100%">
         <h1 id="bold" style="margin-left:20px; display:inline;position: relative">uWeather</h1>
         <h1 style="display:inline; box-shadow: 4px 0 0 white; color:#424242;margin-left:10px">&#3164</h1>
         <h1 style="display:inline; color:#424242;margin-left:10px">&#3164</h1>
         <h1 style="display:inline;"><a href="">Home</a></h1>
-        <div class="form-check form-switch ms-3" style="display:inline-block">
-            <input class="form-check-input" type="checkbox" id="switch" />
-            <label class="form-check-label" for="switch">Light/Dark Mode</label>
+        <div class="form-check form-switch mx-4">
+            <input
+                    class="form-check-input p-2"
+                    type="checkbox"
+                    role="switch"
+                    id="flexSwitchCheckChecked"
+                    checked
+                    onclick="myFunction()"
+            />
         </div>
     </div>
 </div>
@@ -72,23 +78,11 @@
     </div>
 </div>
 <script>
-    const switchElem = document.querySelector('#switch')
-    const p = document.getElementsByTagName("p")
-    const h1 = document.querySelector("h1")
-    const h2 = document.querySelector("h2")
-
-    switchElem.addEventListener("change", function() {
-        for(let i = 0; i < p.length; i++) {
-            if(switchElem.checked) {
-                p[i].style.color = "white"
-
-
-            } else {
-                p[i].style.color = "black"
-            }
-        }
-    });
-
+    function myFunction() {
+        var element = document.body;
+        element.dataset.bsTheme =
+            element.dataset.bsTheme == "light" ? "dark" : "light";
+    }
 </script>
 </body>
 </html>
