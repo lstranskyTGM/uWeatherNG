@@ -1,0 +1,25 @@
+body {
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-color:#262626;
+}
+p {
+    color:white;
+    font-size: 45px;
+    font-family:"Segoe UI",serif
+}
+#bold {
+    font-weight: bolder
+}
+h1 {
+    font-size:1.2cm;
+    color:white;
+}
+h2 {
+    font-size:1cm
+}
+a:link, a:visited, a:hover, a:active {
+    text-decoration: none;
+    color:white
+}
