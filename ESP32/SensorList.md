@@ -22,7 +22,7 @@ Ambient temperature: m
 Link:
 https://www.bosch-sensortec.com/products/environmental-sensors/humidity-sensors-bme280/
 
-##  Raindrop Rain Sensor Module    
+##  Raindrop Rain Sensor Module   gemacht
 
 Raindrop Rain Sensor Module is a module used to detect and measure rain. It usually consists of a sensor that can detect the presence of water droplets, and an electronic circuit that can process the signal from the sensor and output an indication of whether it is raining or not. 
 
@@ -31,7 +31,7 @@ Rain: (true/false)
 Link:
 https://www.az-delivery.de/en/products/regen-sensor-modul
 
-##  NEO-6M GPS Module:
+##  NEO-6M GPS Module: gemacht
 
 GPS Sensor
 
