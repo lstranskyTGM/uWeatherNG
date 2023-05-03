@@ -9,97 +9,63 @@
 </head>
 
 
-<body data-bs-theme="dark">
+<body>
 <div style="background-color: #424242;height: 2cm;border-width: 1px 0">
     <div class="d-flex align-items-center" style="height: 100%">
         <h1 id="bold" style="margin-left:20px; display:inline;position: relative">uWeather</h1>
         <h1 style="display:inline; box-shadow: 4px 0 0 white; color:#424242;margin-left:10px">&#3164</h1>
         <h1 style="display:inline; color:#424242;margin-left:10px">&#3164</h1>
         <h1 style="display:inline;"><a href="">Home</a></h1>
-            <button class="btn btn-link nav-link py-2 px-0 px-lg-2 dropdown-toggle d-flex align-items-center" id="bd-theme" type="button" aria-expanded="false" data-bs-toggle="dropdown" data-bs-display="static" aria-label="Toggle theme (dark)">
-                <svg class="bi my-1 theme-icon-active"><use href="#moon-stars-fill"></use></svg>
-                <span class="d-lg-none ms-2" id="bd-theme-text">Toggle theme</span>
-            </button>
-        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="bd-theme-text">
-            <li>
-                <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" aria-pressed="false">
-                    <svg class="bi me-2 opacity-50 theme-icon"><use href="#sun-fill"></use></svg>
-                    Light
-                    <svg class="bi ms-auto d-none"><use href="#check2"></use></svg>
-                </button>
-            </li>
-            <li>
-                <button type="button" class="dropdown-item d-flex align-items-center active" data-bs-theme-value="dark" aria-pressed="true">
-                    <svg class="bi me-2 opacity-50 theme-icon"><use href="#moon-stars-fill"></use></svg>
-                    Dark
-                    <svg class="bi ms-auto d-none"><use href="#check2"></use></svg>
-                </button>
-            </li>
-            <li>
-                <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="auto" aria-pressed="false">
-                    <svg class="bi me-2 opacity-50 theme-icon"><use href="#circle-half"></use></svg>
-                    Auto
-                    <svg class="bi ms-auto d-none"><use href="#check2"></use></svg>
-                </button>
-            </li>
-        </ul>
     </div>
 </div>
 
 
 
 <div class="container">
-    <div id="maindiv" class="row row-cols-2 border-0 rounded mx-auto" style="background-color:white; width: 11cm; height: 5cm; margin-top:1cm;">
+    <div id="maindiv" class="row row-cols-2 border-0 mx-auto">
         <div class="col" style="margin-right:-20px;">
-            <object data="logo.svg" style="margin-top: .75cm; height:3.5cm"></object>
+            <object data="logo.svg"></object>
         </div>
 
         <div class="col" style="margin-left:.5cm">
-            <h2 style="margin-top: 1.8cm;">uWeather</h2>
+            <h2>uWeather</h2>
         </div>
     </div>
 
     <div id="maindiv1" class="row" style="margin-top: 2cm">
         <div class="col-sm-4 mb-3">
-            <div class="p-2 bg-white text-center" style="width: 100%;border-radius: 40px;max-width: 13cm">
-                <p style="font-size:60px; color:black; font-weight: 99999;">38°</p>
+            <div class="p-2 text-center">
+                <p>38°</p>
             </div>
         </div>
         <div class="col-sm-4 mb-3">
-            <div class="p-2 bg-white text-center" style="width: 100%;border-radius: 40px;max-width: 13cm">
-                <p style="font-size:60px; color:black; font-weight: 99999;">11:00</p>
+            <div class="p-2 text-center">
+                <p>11:00</p>
             </div>
         </div>
         <div class="col-sm-4 mb-3">
-            <div class="p-2 bg-white text-center" style="width: 100%;border-radius: 40px;max-width: 13cm">
-                <p style="font-size:60px; color:black; font-weight: 99999;">21%</p>
+            <div class="p-2 text-center">
+                <p>21%</p>
             </div>
         </div>
     </div>
     <div id="maindiv2" class="row" style="margin-top: 1cm">
         <div class="col-sm-4 mb-3">
-            <div class="p-2 bg-white text-center" style="width: 100%;border-radius: 40px;max-width: 13cm">
-                <p style="font-size:60px; color:black; font-weight: 99999;">{Kamera}</p>
+            <div class="p-2 text-center">
+                <p>{Kamera}</p>
             </div>
         </div>
         <div class="col-sm-4 mb-3">
-            <div class="p-2 bg-white text-center" style="width: 100%;border-radius: 40px;max-width: 13cm">
-                <p style="font-size:60px; color:black; font-weight: 99999;">1000 hpa</p>
+            <div class="p-2 text-center">
+                <p>1000 hpa</p>
             </div>
         </div>
         <div class="col-sm-4 mb-3">
-            <div class="p-2 bg-white text-center" style="width: 100%;border-radius: 40px;max-width: 13cm">
-                <p style="font-size:60px; color:black; font-weight: 99999;">{location}</p>
+            <div class="p-2 text-center">
+                <p>{location}</p>
             </div>
         </div>
     </div>
 </div>
-<script>
-    function myFunction() {
-        var element = document.body;
-        element.dataset.bsTheme =
-            element.dataset.bsTheme === "light" ? "dark" : "light";
-    }
-</script>
 </body>
 </html>

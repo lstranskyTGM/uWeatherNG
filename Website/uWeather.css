@@ -23,3 +23,56 @@ a:link, a:visited, a:hover, a:active {
     text-decoration: none;
     color:white
 }
+
+.p-2.text-center {
+    width: 100%;
+    border-radius: 40px;
+    max-width: 13cm;
+    background: white;
+    transition: background-color .5s ease-out 10ms
+}
+
+.p-2.text-center:hover {
+    background: #424242;
+}
+
+.p-2.text-center > p {
+    font-size:60px;
+    color:black;
+    font-weight: 99999;
+    transition: color .5s ease-out 10ms
+}
+
+.p-2.text-center:hover > p{
+    color:white;
+}
+
+#maindiv {
+    background-color:white;
+    width: 11cm;
+    height: 5cm;
+    margin-top:1cm;
+    border-radius: 40px;
+}
+
+#maindiv > .col > object {
+    margin-top: .75cm;
+    height:3.5cm;
+    transition: margin-left .5s ease-out 10ms, height .5s ease-out 10ms, margin-top .5s ease-out 10ms;
+}
+
+#maindiv:hover > .col > object{
+    margin-left: 20%;
+    height:5cm;
+    margin-top: 0;
+}
+
+#maindiv > .col > h2 {
+    margin-top: 1.8cm;
+    opacity: 100;
+    transition: opacity .5s ease-out 10ms
+}
+
+#maindiv:hover > .col > h2 {
+    opacity: 0
+}
