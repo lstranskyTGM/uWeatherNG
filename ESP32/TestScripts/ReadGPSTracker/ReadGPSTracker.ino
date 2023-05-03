@@ -1,18 +1,26 @@
-/*
- * This is a test file for reading the gps tracker
- */
-
+#include <TinyGPS++.h>
 #include <SoftwareSerial.h>
 
-// The serial connection to the GPS module
-SoftwareSerial ss(4, 3);
+SoftwareSerial serialGPS(4, 5); // RX, TX
+TinyGPSPlus gps;
+breite = 0
+lange = 0
 
 void setup() {
-  // put your setup code here, to run once:
-
+  Serial.begin(115200);
+  serialGPS.begin(9600);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-
+  while (serialGPS.available() > 0) {
+    if (gps.encode(serialGPS.read())) {
+      Serial.print("Location: ");
+      breite = gps.location.lat();
+      Serial.print(gps.location.lat(), 6);
+      Serial.print(", ");
+      lange = gps.location.lng()
+      Serial.println(gps.location.lng(), 6);
+    }
+  }
+  delay(1000);
 }
