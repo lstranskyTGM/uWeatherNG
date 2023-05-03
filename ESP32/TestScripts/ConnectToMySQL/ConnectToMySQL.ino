@@ -1,19 +1,31 @@
+/*
+ * This is a test file for connecting to a wifi and then to a MySQL server.
+ * There is also a short test query that gets executed.
+ */
+
 #include <WiFi.h>
 #include <MySQL_Connection.h>
 #include <MySQL_Cursor.h>
 
-const char* ssid = "your_SSID";
-const char* password = "your_PASSWORD";
+// Replace with your network login data
+const char* wifi_ssid = "REPLACE_WITH_WIFI_SSID";
+const char* wifi_password = "REPLACE_WITH_WIFI_PASSWORD";
 
-IPAddress server_addr(192, 168, 1, 100); // Replace with your MySQL server IP address
-char user[] = "your_USERNAME"; // Replace with your MySQL username
-char password[] = "your_PASSWORD"; // Replace with your MySQL password
-char db_name[] = "your_DATABASE"; // Replace with your MySQL database name
+// Replace with your MySQL server login data
+IPAddress db_server_addr(0, 0, 0, 0);
+int db_port = 3306; 
+char db_user[] = "REPLACE_WITH_DB_USER"; 
+char db_password[] = "REPLACE_WITH_DB_PASSWORD"; 
+
+WiFiClient client;
+MySQL_Connection conn(&client);
+MySQL_Cursor* cursor;
+
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   // Connect to Wi-Fi network
-  WiFi.begin(ssid, password);
+  WiFi.begin(wifi_ssid, wifi_password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting to WiFi...");
@@ -23,8 +35,8 @@ void setup() {
   get_network_info();
 
   // Establish a MySQL connection
-  MySQL_Connection conn((Client *)&WiFiClient());
-  if (conn.connect(server_addr, 3306, user, password)) {
+  Serial.print("Connecting to MySQL Server...");
+  if (conn.connect(db_server_addr, db_port, db_user, db_password)) {
     Serial.println("Connected to MySQL server");
   }
   else {
@@ -47,7 +59,7 @@ void loop() {
 void testSQL() {
   // Send an SQL command
   MySQL_Cursor *cursor = new MySQL_Cursor(&conn);
-  char query[] = "INSERT INTO table_name (column1, column2) VALUES ('value1', 'value2')";
+  char query = "INSERT INTO usr_web204_3.Messorte VALUES('Test');";
   cursor->execute(query);
   delete cursor;
 }
