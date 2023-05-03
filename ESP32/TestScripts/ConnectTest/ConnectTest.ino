@@ -19,7 +19,7 @@ char user[] = "REPLACE_WITH_DB_USER";
 char password[] = "REPLACE_WITH_DB_PASSWORD";
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 }
 
 void loop() {

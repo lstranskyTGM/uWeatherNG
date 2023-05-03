@@ -14,7 +14,7 @@ Adafruit_BME280 bme; // I2C
 #define KY018 26 // KY018 pin (PhotoresistorModule)
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   bool status;
   status = bme.begin(0x76); 

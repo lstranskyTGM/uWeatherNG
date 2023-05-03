@@ -22,7 +22,7 @@ MySQL_Connection conn(&client);
 MySQL_Cursor* cursor;
 
 void setup() {
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   // Connect to Wi-Fi network
   WiFi.begin(wifi_ssid, wifi_password);
