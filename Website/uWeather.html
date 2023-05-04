@@ -10,7 +10,7 @@
 
 
     <body>
-        <div style="background-color: #424242;height: 2cm;border-width: 1px 0; position: fixed;top: 0;right: 0; width:100%" id="header">
+        <div id="header">
             <div class="d-flex align-items-center" style="height: 100%;">
                 <h1 id="bold" style="margin-left:20px; display:inline;position: relative">uWeather</h1>
                 <h1 style="display:inline; box-shadow: 4px 0 0 white; color:#424242;margin-left:10px">&#3164</h1>
@@ -22,7 +22,7 @@
 
 
         <div class="container" id="Container">
-            <section style="margin-top: 4cm;">
+            <section id="Homeid"style="margin-top: 4cm;">
                 <div id="maindiv" class="row row-cols-2 border-0 mx-auto">
                     <div class="col" style="margin-right:-20px;">
                         <object data="logo.svg"></object>
@@ -74,16 +74,37 @@
             <section id="Location">
                 <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d915.5443879671432!2d16.875994717059488!3d48.49494020835356!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x476cdc46199b5659%3A0xa6cc5f7f176cb998!2sFeldstra%C3%9Fe%2042%2C%202264%20Jedenspeigen!5e1!3m2!1sde!2sat!4v1683185027641!5m2!1sde!2sat" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
             </section>
+
+            <section id="footer">
+                <p>Impressum</p>
+                <p>uWeather</p>
+                <object data="logoWhite.svg"></object>
+            </section>
         </div>
 
         <script>
             const home = document.querySelector("#home");
+
             home.addEventListener("click", function() {
                 window.scrollTo({ top: 0, behavior: "smooth" });
             });
+
             window.onload = function() {
                 window.scrollTo(0, 0);
             }
+
+            const footer = document.getElementById('footer');
+            let prevScrollpos = window.pageYOffset;
+
+            window.addEventListener('scroll', () => {
+                let currentScrollPos = window.pageYOffset;
+                if (prevScrollpos > currentScrollPos) {
+                    footer.style.bottom = '-110px';
+                } else {
+                    footer.style.bottom = '20px';
+                }
+                prevScrollpos = currentScrollPos;
+            });
         </script>
     </body>
 </html>
