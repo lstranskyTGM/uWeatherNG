@@ -89,8 +89,12 @@ a:link, a:visited, a:hover, a:active {
     opacity: 0
 }
 
-#Location, #Homeid {
+#Homeid {
     min-height:100vh
+}
+
+#Location {
+    min-height:70vh
 }
 
 #home, #loc {
@@ -129,9 +133,12 @@ a:link, a:visited, a:hover, a:active {
 
 #footer > p {
     margin-left: 30px;
-    display:inline
+    display:inline;
+    margin-top:-5cm
 }
 
 #footer > object {
-    height:2cm;
+    margin-top: .25cm;
+    height:1.5cm;
+    margin-left: 40vw;
 }
