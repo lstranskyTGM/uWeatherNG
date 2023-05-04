@@ -16,14 +16,16 @@ USE usr_web204_3;
 
 SET FOREIGN_KEY_CHECKS = 0;
 
+/*
 --
 -- Tabelle Messorte
 --
 DROP TABLE IF EXISTS Messorte;
 CREATE TABLE Messorte (
     mo_id INT PRIMARY KEY,
-    mo_name VARCHAR(255)
+    mo_name VARCHAR(255) UNIQUE,
 );
+*/
 
 --
 -- Tabelle Messpunkte
@@ -32,14 +34,14 @@ DROP TABLE IF EXISTS Messpunkte;
 CREATE TABLE Messpunkte (
     mp_id INT PRIMARY KEY,
     mp_einheit VARCHAR(255),
-    mp_name VARCHAR(255) Unique
+    mp_maß VARCHAR(255) Unique,
+    mp_name VARCHAR(255)
 );
 
+/*-
 --
 -- Tabelle Messgroessen
 --
-
-/*
 DROP TABLE IF EXISTS Messgroessen;
 CREATE TABLE Messgroessen (
     mg_id INT PRIMARY KEY,
@@ -55,22 +57,24 @@ DROP TABLE IF EXISTS Messwerte;
 CREATE TABLE Messwerte (
     mw_id INT PRIMARY KEY,
     mw_messpunkt INT,
-    mw_messort INT,
+    # mw_messort INT,
     mw_wert FLOAT(5,2),
-    mw_datumZeit DATETIME
+    mw_datumZeit datetime,
+    mw_lattitude float,
+    mw_longitude float
 );
 
 --
 -- Foreign Keys & Auto Increment
 --
 
+/*
 ALTER TABLE Messorte
     MODIFY mo_id INT NOT NULL AUTO_INCREMENT;
+*/
 
 ALTER TABLE Messpunkte
-    /*
-    ADD CONSTRAINT FK_MP2MG FOREIGN KEY (mp_messgroesse) REFERENCES Messgroessen(mg_id),
-    */
+    # ADD CONSTRAINT FK_MP2MG FOREIGN KEY (mp_messgroesse) REFERENCES Messgroessen(mg_id),
     MODIFY mp_id INT NOT NULL AUTO_INCREMENT;
 
 /*
@@ -80,6 +84,6 @@ ALTER TABLE Messgroessen
 
 ALTER TABLE Messwerte
     ADD CONSTRAINT FK_MW2MP FOREIGN KEY (mw_messpunkt) REFERENCES Messpunkte(mp_id),
-    ADD CONSTRAINT FK_MW2MO FOREIGN KEY (mw_messort) REFERENCES Messorte(mo_id),
+    # ADD CONSTRAINT FK_MW2MO FOREIGN KEY (mw_messort) REFERENCES Messorte(mo_id),
     MODIFY mw_id INT NOT NULL AUTO_INCREMENT;
 
