@@ -1,13 +1,13 @@
 # Sensor List:
 
-## KY0-18:
+## GY-302 BH1750:
 
-The KY-018 Photoresistor module is used to measure light intensity. The resistance will decrease in the presence of light and increase in the absence of it. The output is analog and determines the intensity of light.
+The GY-302 BH1750 Photoresistor module is used to measure light intensity. The resistance will decrease in the presence of light and increase in the absence of it. 
 
-Light intensity: lux
+Light intensity: lx
 
 Link:
-https://arduinomodules.info/ky-018-photoresistor-module/
+https://www.az-delivery.de/products/gy-302-bh1750-lichtsensor-lichtstaerke-modul-fuer-arduino-und-raspberry-pi
 
 ## BME280:
 
