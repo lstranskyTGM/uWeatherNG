@@ -7,14 +7,14 @@
 #include "time.h"
 #include <ESP32Time.h>
 
-const char* SSID = "REPLACE_WITH_WIFI_SSID";
-const char* PASS = "REPLACE_WITH_WIFI_PASSWORD";
+const char* SSID = "REPLACE_WITH_WIFI_SSID";    
+const char* PASS = "REPLACE_WITH_WIFI_PASSWORD";    
 
 const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = 7200;
-const int   daylightOffset_sec = 3600;
+const long  gmtOffset_sec = 3600;
+const int   daylightOffset_sec = 3600;  // Does the daylightOffset change by itself?
 
-ESP32Time rtc(7200);
+ESP32Time rtc(0);
 
 WiFiClient client;
 
