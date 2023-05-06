@@ -1,9 +1,8 @@
 # ToDo List:
 
-- [x] Create Database (SQLCreate)
-- [x] Create SQLInsert for fixed values
 - [x] Buy Sensors
 - [x] Write testscripts (MySQLConnection, ReadSensors, WriteDisplay, NTPRequest)
+- [ ] test if every script works
 - [ ] Connect Sensors to esp32
 - [ ] Write the main script using testscripts
 - [ ] Adjust the ntp request script (Change Timezone offset to UTC+1, daylight offset)
