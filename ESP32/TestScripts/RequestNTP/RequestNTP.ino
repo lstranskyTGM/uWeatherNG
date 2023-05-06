@@ -5,13 +5,16 @@
 
 #include <WiFi.h>
 #include "time.h"
+#include <ESP32Time.h>
 
-const char* ssid     = "REPLACE_WITH_WIFI_SSID";
-const char* password = "REPLACE_WITH_WIFI_PASSWORD";
+const char* SSID = "REPLACE_WITH_WIFI_SSID";
+const char* PASS = "REPLACE_WITH_WIFI_PASSWORD";
 
 const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = 0;
+const long  gmtOffset_sec = 7200;
 const int   daylightOffset_sec = 3600;
+
+ESP32Time rtc(7200);
 
 WiFiClient client;
 
@@ -22,7 +25,12 @@ void setup() {
 
   // Init and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  printLocalTime();
+  
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo)){
+      rtc.setTimeStruct(timeinfo); 
+  }
+
 }
 
 void loop() {
@@ -30,7 +38,7 @@ void loop() {
     connectToWifi();
   }
 
-  printLocalTime();
+  Serial.println(rtc.getTime("%A, %B %d %Y %H:%M:%S"));
 
   delay(1000);
 }
@@ -44,36 +52,4 @@ void connectToWifi() {
   Serial.println("Connected to WiFi");
 }
 
-void printLocalTime(){
-  struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
-    Serial.println("Failed to obtain time");
-    return;
-  }
-  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-  Serial.print("Day of week: ");
-  Serial.println(&timeinfo, "%A");
-  Serial.print("Month: ");
-  Serial.println(&timeinfo, "%B");
-  Serial.print("Day of Month: ");
-  Serial.println(&timeinfo, "%d");
-  Serial.print("Year: ");
-  Serial.println(&timeinfo, "%Y");
-  Serial.print("Hour: ");
-  Serial.println(&timeinfo, "%H");
-  Serial.print("Hour (12 hour format): ");
-  Serial.println(&timeinfo, "%I");
-  Serial.print("Minute: ");
-  Serial.println(&timeinfo, "%M");
-  Serial.print("Second: ");
-  Serial.println(&timeinfo, "%S");
 
-  Serial.println("Time variables");
-  char timeHour[3];
-  strftime(timeHour,3, "%H", &timeinfo);
-  Serial.println(timeHour);
-  char timeWeekDay[10];
-  strftime(timeWeekDay,10, "%A", &timeinfo);
-  Serial.println(timeWeekDay);
-  Serial.println();
-}
