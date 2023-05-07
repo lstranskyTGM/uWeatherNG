@@ -18,8 +18,19 @@ ESP32Time rtc(0);
 
 WiFiClient client;
 
+int period = 1000;
+unsigned long time_now = 0;
+
+#define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */ 
+#define TIME_TO_SLEEP 60/* Time ESP32 will go to sleep (in seconds) */
+
+RTC_DATA_ATTR int bootCount = 0;
+
 void setup() {
   Serial.begin(115200);
+
+  ++bootCount;
+  Serial.println("Boot number: " + String(bootCount));
 
   connectToWifi();
 
@@ -31,16 +42,42 @@ void setup() {
       rtc.setTimeStruct(timeinfo); 
   }
 
+  // time_now = millis();
+
+  /*
+  if (WiFi.status() != WL_CONNECTED) {
+    connectToWifi();
+  }
+  */
+
+  Serial.println(rtc.getTime("%A, %B %d %Y %H:%M:%S"));
+
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+
+  esp_deep_sleep_start();
+
 }
 
 void loop() {
+  /*
+  // time_now = millis();
+
   if (WiFi.status() != WL_CONNECTED) {
     connectToWifi();
   }
 
   Serial.println(rtc.getTime("%A, %B %d %Y %H:%M:%S"));
 
-  delay(1000);
+  esp_deep_sleep_start();
+
+  while(millis() < time_now + period) {
+    // Wait for 1000 ms
+  }
+  // Non-blocking
+  while(millis() - time_now < period) {
+    // Wait for 100 ms
+  }
+  */
 }
 
 void connectToWifi() {
