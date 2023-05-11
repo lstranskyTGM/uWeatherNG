@@ -1,3 +1,7 @@
+/*
+ * This is a test file for reading the GPS Tracker
+ */
+
 #include <TinyGPS++.h>
 #include <SoftwareSerial.h>
 

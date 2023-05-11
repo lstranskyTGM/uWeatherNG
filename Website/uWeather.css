@@ -94,7 +94,7 @@ a:link, a:visited, a:hover, a:active {
 }
 
 #Location {
-    min-height:70vh
+    min-height:70vh;
 }
 
 #home, #loc {
@@ -132,13 +132,20 @@ a:link, a:visited, a:hover, a:active {
 }
 
 #footer > p {
-    margin-left: 30px;
-    display:inline;
-    margin-top:-5cm
+    display:inline-block;
+    margin-left: 27vw;
 }
 
 #footer > object {
+
+    display:inline-block;
     margin-top: .25cm;
     height:1.5cm;
-    margin-left: 40vw;
+    margin-left: 28vw;
+}
+iframe {
+    width: 80vw;
+    height: 70vh;
+    margin-top: -15vh;
+    border-radius: 40px;
 }

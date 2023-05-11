@@ -59,7 +59,7 @@ void loop() {
 void testSQL() {
   // Send an SQL command
   MySQL_Cursor *cursor = new MySQL_Cursor(&conn);
-  char query = "INSERT INTO usr_web204_3.Messorte VALUES('Test');";
+  char query = "INSERT INTO usr_web204_3.Messorte (mo_name) VALUES ('Test');";
   cursor->execute(query);
   delete cursor;
 }

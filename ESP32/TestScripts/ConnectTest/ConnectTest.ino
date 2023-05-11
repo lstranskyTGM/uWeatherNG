@@ -34,7 +34,7 @@ void loop() {
   get_network_info();
   cursor = new MySQL_Cursor(&conn);
   char statementChar[256];
-  String statementStr = "INSERT INTO usr_web204_3.Messorte VALUES('Test');";
+  String statementStr = "INSERT INTO usr_web204_3.Messorte (mo_name) VALUES ('Test');";
   statementStr.toCharArray (statementChar, statementStr.length());
   cursor->execute(statementChar);
   conn.close();

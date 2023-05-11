@@ -3,18 +3,21 @@
  */
 
 #include <Wire.h>
+#include <BH1750.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
 
 #define SEALEVELPRESSURE_HPA (1013.25)
 
+BH1750 lightMeter;
 Adafruit_BME280 bme; // I2C
-
-// Sensor Pins
-#define KY018 26 // KY018 pin (PhotoresistorModule)
 
 void setup() {
   Serial.begin(115200);
+
+  Wire.begin();
+
+  lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE, 0x23);
 
   bool status;
   status = bme.begin(0x76); 
@@ -35,10 +38,10 @@ void loop() {
 void printKY018() {
   Serial.println("KY018 Messung:");
   Serial.println("--------------");
-  int lightLevel = analogRead(KY018);
-  Serial.print("Brightness = ");
-  Serial.print(lightLevel);
-  Serial.println(" LUX");
+  float lux = lightMeter.readLightLevel();
+  Serial.print("Light: ");
+  Serial.print(lux);
+  Serial.println(" Lx");
   
   Serial.println();
 }
@@ -46,19 +49,19 @@ void printKY018() {
 void printBME280() {
   Serial.println("BME280 Messung:");
   Serial.println("---------------");
-  Serial.print("Temperature = ");
+  Serial.print("Temperature: ");
   Serial.print(bme.readTemperature());
   Serial.println(" *C");
   
-  Serial.print("Pressure = ");
+  Serial.print("Pressure: ");
   Serial.print(bme.readPressure() / 100.0F);
   Serial.println(" hPa");
 
-  Serial.print("Approx. Altitude = ");
+  Serial.print("Approx. Altitude: ");
   Serial.print(bme.readAltitude(SEALEVELPRESSURE_HPA));
   Serial.println(" m");
 
-  Serial.print("Humidity = ");
+  Serial.print("Humidity: ");
   Serial.print(bme.readHumidity());
   Serial.println(" %");
 

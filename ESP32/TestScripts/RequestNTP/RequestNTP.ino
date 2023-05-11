@@ -5,34 +5,79 @@
 
 #include <WiFi.h>
 #include "time.h"
+#include <ESP32Time.h>
 
-const char* ssid     = "REPLACE_WITH_WIFI_SSID";
-const char* password = "REPLACE_WITH_WIFI_PASSWORD";
+const char* SSID = "REPLACE_WITH_WIFI_SSID";    
+const char* PASS = "REPLACE_WITH_WIFI_PASSWORD";    
 
 const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = 0;
-const int   daylightOffset_sec = 3600;
+const long  gmtOffset_sec = 3600;
+const int   daylightOffset_sec = 3600;  // Does the daylightOffset change by itself?
+
+ESP32Time rtc(0);
 
 WiFiClient client;
 
+int period = 1000;
+unsigned long time_now = 0;
+
+#define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */ 
+#define TIME_TO_SLEEP 60/* Time ESP32 will go to sleep (in seconds) */
+
+RTC_DATA_ATTR int bootCount = 0;
+
 void setup() {
   Serial.begin(115200);
+
+  ++bootCount;
+  Serial.println("Boot number: " + String(bootCount));
 
   connectToWifi();
 
   // Init and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  printLocalTime();
+  
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo)){
+      rtc.setTimeStruct(timeinfo); 
+  }
+
+  // time_now = millis();
+
+  /*
+  if (WiFi.status() != WL_CONNECTED) {
+    connectToWifi();
+  }
+  */
+
+  Serial.println(rtc.getTime("%A, %B %d %Y %H:%M:%S"));
+
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+
+  esp_deep_sleep_start();
+
 }
 
 void loop() {
+  /*
+  // time_now = millis();
+
   if (WiFi.status() != WL_CONNECTED) {
     connectToWifi();
   }
 
-  printLocalTime();
+  Serial.println(rtc.getTime("%A, %B %d %Y %H:%M:%S"));
 
-  delay(1000);
+  esp_deep_sleep_start();
+
+  while(millis() < time_now + period) {
+    // Wait for 1000 ms
+  }
+  // Non-blocking
+  while(millis() - time_now < period) {
+    // Wait for 100 ms
+  }
+  */
 }
 
 void connectToWifi() {
@@ -44,36 +89,4 @@ void connectToWifi() {
   Serial.println("Connected to WiFi");
 }
 
-void printLocalTime(){
-  struct tm timeinfo;
-  if(!getLocalTime(&timeinfo)){
-    Serial.println("Failed to obtain time");
-    return;
-  }
-  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
-  Serial.print("Day of week: ");
-  Serial.println(&timeinfo, "%A");
-  Serial.print("Month: ");
-  Serial.println(&timeinfo, "%B");
-  Serial.print("Day of Month: ");
-  Serial.println(&timeinfo, "%d");
-  Serial.print("Year: ");
-  Serial.println(&timeinfo, "%Y");
-  Serial.print("Hour: ");
-  Serial.println(&timeinfo, "%H");
-  Serial.print("Hour (12 hour format): ");
-  Serial.println(&timeinfo, "%I");
-  Serial.print("Minute: ");
-  Serial.println(&timeinfo, "%M");
-  Serial.print("Second: ");
-  Serial.println(&timeinfo, "%S");
 
-  Serial.println("Time variables");
-  char timeHour[3];
-  strftime(timeHour,3, "%H", &timeinfo);
-  Serial.println(timeHour);
-  char timeWeekDay[10];
-  strftime(timeWeekDay,10, "%A", &timeinfo);
-  Serial.println(timeWeekDay);
-  Serial.println();
-}
