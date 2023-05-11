@@ -7,23 +7,43 @@
 #include <WiFi.h>
 #include <MySQL_Connection.h>
 #include <MySQL_Cursor.h>
+#include "time.h"
+#include <ESP32Time.h>
 
 // Replace with your network login data
-RTC_DATA_ATTR const char* wifi_ssid = "REPLACE_WITH_WIFI_SSID";
-RTC_DATA_ATTR const char* wifi_password = "REPLACE_WITH_WIFI_PASSWORD";
+ const char* wifi_ssid = "REPLACE_WITH_WIFI_SSID";
+ const char* wifi_password = "REPLACE_WITH_WIFI_PASSWORD";
 
 // Replace with your MySQL server login data
-RTC_DATA_ATTR IPAddress db_server_addr(0, 0, 0, 0);
-RTC_DATA_ATTR int db_port = 3306; 
-RTC_DATA_ATTR char db_user[] = "REPLACE_WITH_DB_USER"; 
-RTC_DATA_ATTR char db_password[] = "REPLACE_WITH_DB_PASSWORD"; 
+IPAddress db_server_addr(0, 0, 0, 0);
+int db_port = 3306; 
+char db_user[] = "REPLACE_WITH_DB_USER"; 
+char db_password[] = "REPLACE_WITH_DB_PASSWORD"; 
 
-RTC_DATA_ATTR WiFiClient client;
-RTC_DATA_ATTR MySQL_Connection conn(&client);
-RTC_DATA_ATTR MySQL_Cursor* cursor;
+WiFiClient client;
+MySQL_Connection conn(&client);
+MySQL_Cursor* cursor;
+
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = 3600;
+const int   daylightOffset_sec = 3600;  // Does the daylightOffset change by itself?
+
+ESP32Time rtc(0);
+
+int period = 1000;
+unsigned long time_now = 0;
+
+#define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */ 
+#define TIME_TO_SLEEP 300/* Time ESP32 will go to sleep (in seconds) */
+
+RTC_DATA_ATTR int bootCount = 0;
+RTC_DATA_ATTR boolean requestedNTP;
 
 void setup() {
   Serial.begin(115200);
+
+  ++bootCount;
+  Serial.println(bootCount);
 
   // Connect to Wi-Fi network
   WiFi.begin(wifi_ssid, wifi_password);
@@ -35,6 +55,11 @@ void setup() {
 
   get_network_info();
 
+  if (requestedNTP == false) {
+    request_NTP_set_RTC();
+    requestedNTP = true;
+  }
+
   // Establish a MySQL connection
   Serial.print("Connecting to MySQL Server...");
   if (conn.connect(db_server_addr, db_port, db_user, db_password)) {
@@ -44,8 +69,6 @@ void setup() {
     Serial.println("MySQL connection failed");
     while (1);
   }
-
-
 
   // Disconnect from MySQL server
   conn.close();
@@ -76,3 +99,24 @@ void get_network_info(){
         Serial.println(WiFi.localIP());
     }
 }
+
+// Connects to an NTP and sets the time of the integrated RTC Module
+void request_NTP_set_RTC() {
+  // Init and get the time
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  
+  // Set rtc time using NTP
+  struct tm timeinfo;
+  if (getLocalTime(&timeinfo)){
+      rtc.setTimeStruct(timeinfo); 
+  }
+}
+
+// Starts DeepSleep nad sets wakeup event
+void start_DeepSleep() {
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+
+  esp_deep_sleep_start();
+}
+
+
