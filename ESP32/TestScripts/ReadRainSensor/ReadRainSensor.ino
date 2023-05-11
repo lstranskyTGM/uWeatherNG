@@ -1,3 +1,7 @@
+/*
+ * This is a test file for reading the Rain Sensor
+ */
+
 const int rainPin = 13; 
 
 void setup() {
