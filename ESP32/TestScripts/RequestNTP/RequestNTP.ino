@@ -52,6 +52,10 @@ void setup() {
 
   Serial.println(rtc.getTime("%A, %B %d %Y %H:%M:%S"));
 
+  Serial.println("Enter DeepSleep");
+
+  delay(10000);
+
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
 
   esp_deep_sleep_start();
