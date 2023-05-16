@@ -56,6 +56,12 @@ Adafruit_BME280 bme;
 #define SCREEN_ADDRESS 0x3C // Address 0x3D for 128x64
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+// RainSensor
+#define rainAnalog 35;
+RTC_DATA_ATTR boolean bIsRaining;
+
+
+
 void setup() {
   Serial.begin(115200);
 
@@ -157,6 +163,12 @@ void start_DeepSleep() {
 void initalize_Devices() {
   Wire.begin();
 
+  // Initalize Display
+  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) { 
+    Serial.println(F("SSD1306 allocation failed"));
+  }
+  Serial.println(F("SSD1306 allocation successfull"));
+
   // Initalize BH1750
   lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE, 0x23);
 
@@ -166,12 +178,6 @@ void initalize_Devices() {
   if (!status) {
     print_Status("Could not find a valid BME280 sensor, check wiring!");
   }
-
-  // Initalize Display
-  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) { 
-    Serial.println(F("SSD1306 allocation failed"));
-  }
-  Serial.println(F("SSD1306 allocation successfull"));
   
 }
 
@@ -185,7 +191,17 @@ void transfer_SensorData() {
   float pressure = bme.readPressure() / 100.0F;
   float humidity = bme.readHumidity();
 
+  // Read RainSensor
+  int rainAnalogVal = analogRead(rainAnalog);
+  if (!bIsRaining && rainAnalogVal < 2700) {
+    Serial.println("Es regnet");
+    bIsRaining = true;
+  } else if (bIsRaining && rainAnalogVal > 3400) {
+    Serial.println("Es regnet nicht");
+    bIsRaining = false;
+  }
 
+  
 
 }
 
