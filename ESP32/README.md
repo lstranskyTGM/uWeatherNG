@@ -1,3 +1,11 @@
+# ToDo List:
+
+- [x] Write all test scripts
+- [ ] Write the main script using testscripts
+- [x] Find a power source for the esp32 (akku, solar panel, ...)
+- [ ] 3D print a case for the esp32
+- [ ] Make the sensors protected against rain and direct daylight
+
 # Sensor List:
 
 ## GY-302 BH1750:
