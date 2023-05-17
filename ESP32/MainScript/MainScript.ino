@@ -15,6 +15,8 @@
 #include <Adafruit_BME280.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <TinyGPSPlus.h>
+#include <HardwareSerial.h>
 
 // Replace with your network login data
 const char* wifi_ssid = "REPLACE_WITH_WIFI_SSID";
@@ -60,10 +62,21 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define rainAnalog 35;
 RTC_DATA_ATTR boolean bIsRaining;
 
+// GPS Tracker
+static const int RXPin = 17, TXPin = 16;
 
+TinyGPSPlus gps;  // The TinyGPSPlus object
+
+HardwareSerial SerialGPS(1);  // The serial connection to the GPS device
+
+// ESP32 ID
+static const int ESP32_ID = 101;
 
 void setup() {
   Serial.begin(115200);
+  SerialGPS.begin(9600, SERIAL_8N1, TXPin, RXPin);
+
+  initalizeDevices();
 
   ++bootCount;
   print_Status("BootCount: "+String(bootCount));
@@ -78,6 +91,8 @@ void setup() {
   }
 
   connect_to_MySQL();
+
+  transfer_SensorData();
 
   // Disconnect from MySQL server
   conn.close();
@@ -164,7 +179,7 @@ void initalize_Devices() {
   Wire.begin();
 
   // Initalize Display
-  if(!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) { 
+  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) { 
     Serial.println(F("SSD1306 allocation failed"));
   }
   Serial.println(F("SSD1306 allocation successfull"));
@@ -178,6 +193,9 @@ void initalize_Devices() {
   if (!status) {
     print_Status("Could not find a valid BME280 sensor, check wiring!");
   }
+
+  // Initalize NEO-6M GPS Tracker
+  
   
 }
 
@@ -191,7 +209,7 @@ void transfer_SensorData() {
   float pressure = bme.readPressure() / 100.0F;
   float humidity = bme.readHumidity();
 
-  // Read RainSensor
+  // Read FC-37
   int rainAnalogVal = analogRead(rainAnalog);
   if (!bIsRaining && rainAnalogVal < 2700) {
     Serial.println("Es regnet");
@@ -201,8 +219,25 @@ void transfer_SensorData() {
     bIsRaining = false;
   }
 
-  
+  	// Read NEO-6M GPS Tracker
 
+
+    // Transfer Data
+    send_SQLQuery(1, lightLevel);  // Transfer BH1750
+    send_SQLQuery(2, temparature);  // Transfer BME280
+    send_SQLQuery(3, pressure);  // Transfer BME280
+    send_SQLQuery(4, humidity);  // Transfer BME280
+    send_SQLQuery(5, (float)bIsRaining);  // Transfer FC-37
+    send_SQLQuery();  // Transfer NEO-6M GPS 
+    send_SQLQuery();  // Transfer NEO-6M GPS 
+
+}
+
+void send_SQLQuery(int messpunkt, float wert) {
+  MySQL_Cursor *cursor = new MySQL_Cursor(&conn);
+  char query = "INSERT INTO usr_web204_3.Messpunkte (mw_messpunkt, mw_messort, mw_wert, mw_datumZeit) VALUES("+messpunkt+", "+ESP32_ID+", "+wert+", "+rtc.getTime("%A, %B %d %Y %H:%M:%S")+");");
+  cursor->execute(query);
+  delete cursor;
 }
 
 void print_Status(String statusText) {
