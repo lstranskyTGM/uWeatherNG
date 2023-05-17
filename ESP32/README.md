@@ -30,7 +30,7 @@ Ambient temperature: m
 Link:
 https://www.bosch-sensortec.com/products/environmental-sensors/humidity-sensors-bme280/
 
-##  Raindrop Rain Sensor Module:
+##  FC-37 Rain Sensor Module:
 
 Raindrop Rain Sensor Module is a module used to detect and measure rain. It usually consists of a sensor that can detect the presence of water droplets, and an electronic circuit that can process the signal from the sensor and output an indication of whether it is raining or not. 
 
@@ -48,3 +48,15 @@ Latitude: °
 
 Link:
 https://www.amazon.de/dp/B088LR3488?tag=makeradviso01-21&linkCode=osi&th=1&psc=1
+
+
+
+
+
+
+
+
+
+
+
+
