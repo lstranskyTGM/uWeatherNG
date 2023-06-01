@@ -28,16 +28,20 @@ int db_port = 3306;
 char db_user[] = "REPLACE_WITH_DB_USER"; 
 char db_password[] = "REPLACE_WITH_DB_PASSWORD"; 
 
+// Declarations for WiFi
 WiFiClient client;
 MySQL_Connection conn(&client);
 MySQL_Cursor* cursor;
 
+// Declarations for NTP
 const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = 3600;
 const int   daylightOffset_sec = 3600;  // Does the daylightOffset change by itself?
 
+// Declarations for ESP32 RTC
 ESP32Time rtc;
 
+// Declarations for DeepSleep
 #define uS_TO_S_FACTOR 1000000ULL // Conversion factor for micro seconds to seconds
 #define TIME_TO_SLEEP 5 * 60  // Time ESP32 will go to sleep (in seconds)
 
@@ -45,28 +49,26 @@ ESP32Time rtc;
 RTC_DATA_ATTR int bootCount = 0;
 RTC_DATA_ATTR boolean requestedNTP;
 
-// Sensors
-BH1750 lightMeter;
-Adafruit_BME280 bme; 
-
-// Display
+// Declarations for Display
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
-
-// Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define OLED_RESET     -1 // Reset pin
 #define SCREEN_ADDRESS 0x3C // Address 0x3D for 128x64
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// RainSensor
+// Declarations for OLED console buffer
+String textLines[]={"", "", "", "", "", "", "", ""};
+int curLine=0;
+
+// Declarations for Weather Sensors
+BH1750 lightMeter;
+Adafruit_BME280 bme; 
 #define rainAnalog 35;
 RTC_DATA_ATTR boolean bIsRaining;
 
-// GPS Tracker
+// Declarations for GPS Sensor
 static const int RXPin = 17, TXPin = 16;
-
 TinyGPSPlus gps;  // The TinyGPSPlus object
-
 HardwareSerial SerialGPS(1);  // The serial connection to the GPS device
 
 // ESP32 ID
@@ -77,6 +79,8 @@ void setup() {
   SerialGPS.begin(9600, SERIAL_8N1, TXPin, RXPin);
 
   initalizeDevices();
+  printLogo();
+  delay(2000);
 
   ++bootCount;
   print_Status("BootCount: "+String(bootCount));
@@ -122,29 +126,24 @@ void connect_to_WiFi() {
 
 // Establish a MySQL connection
 void connect_to_MySQL() {
-  Serial.print("Connecting to MySQL Server...");
+  Serial.print("Connecting to MySQL..");
   if (conn.connect(db_server_addr, db_port, db_user, db_password)) {
-    print_Status("Connected to MySQL server");
+    print_Status("Connected to MySQL");
   }
   else {
-    print_Status("MySQL connection failed");
+    print_Status("MySQL connect failed");
   }
 }
 
 // Gets all the network info
 void get_network_info(){
     if(WiFi.status() == WL_CONNECTED) {
-        Serial.print("[*] Network information for ");
-        Serial.println(wifi_ssid);
-
-        Serial.println("[+] BSSID : " + WiFi.BSSIDstr());
-        Serial.print("[+] Gateway IP : ");
-        Serial.println(WiFi.gatewayIP());
-        Serial.print("[+] Subnet Mask : ");
-        Serial.println(WiFi.subnetMask());
-        Serial.println((String)"[+] RSSI : " + WiFi.RSSI() + " dB");
-        Serial.print("[+] ESP32 IP : ");
-        Serial.println(WiFi.localIP());
+        print_Status("SSID="+String(wifi_ssid));
+        print_Status("IP="+String(WiFi.localIP()));
+        print_Status("SubnetMask="+String(WiFi.subnetMask()));
+        print_Status("Gateway="+String(WiFi.gatewayIP()));
+        print_Status("RSSI="+String(WiFi.RSSI())+" dB");
+        print_Status("Encryption="+String(WiFi.encryptionType()));
     }
 }
 
@@ -155,7 +154,7 @@ void request_NTP_set_RTC() {
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   print_Status("Request successfull");
 
-  print_Status("Writing Time into RTC Module...");
+  print_Status("Writing Time to RTC..");
   // Set rtc time using NTP
   struct tm timeinfo;
   if (getLocalTime(&timeinfo)){
@@ -166,10 +165,10 @@ void request_NTP_set_RTC() {
 
 // Starts DeepSleep and sets wakeup event
 void start_DeepSleep() {
-  print_Status("Setting DeepSleep WakeUp");
+  print_Status("Set DeepSleep WakeUp..");
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
 
-  print_Status("Starting DeepSleep...");
+  print_Status("Starting DeepSleep..");
   Serial.flush(); // Waits for the transmisson of outgoing serial data to complete
   esp_deep_sleep_start();
 }
@@ -201,35 +200,45 @@ void initalize_Devices() {
 
 // Reads and sends the Data from the Sensors to the MySQL Server
 void transfer_SensorData() {
+
+  print_Status("Reading sensor data..");
+
   // Read BH1750
   float lightLevel = lightMeter.readLightLevel();
+  print_Status("LightLevel="+String(lightLevel));
 
   // Read BME280
   float temparature = bme.readTemperature();
   float pressure = bme.readPressure() / 100.0F;
   float humidity = bme.readHumidity();
+  print_Status("Temperature="+String(temperature));
+  print_Status("Pressure="+String(pressure));
+  print_Status("Humidity="+String(humidity));
 
   // Read FC-37
   int rainAnalogVal = analogRead(rainAnalog);
   if (!bIsRaining && rainAnalogVal < 2700) {
-    Serial.println("Es regnet");
     bIsRaining = true;
   } else if (bIsRaining && rainAnalogVal > 3400) {
-    Serial.println("Es regnet nicht");
     bIsRaining = false;
   }
+  if (bIsRaining) {
+    print_Status("Raining=YES");
+  } else {
+    print_Status("Raining=NO");
+  }
 
-  	// Read NEO-6M GPS Tracker
+  // Read NEO-6M GPS Tracker
 
 
-    // Transfer Data
-    send_SQLQuery(1, lightLevel);  // Transfer BH1750
-    send_SQLQuery(2, temparature);  // Transfer BME280
-    send_SQLQuery(3, pressure);  // Transfer BME280
-    send_SQLQuery(4, humidity);  // Transfer BME280
-    send_SQLQuery(5, (float)bIsRaining);  // Transfer FC-37
-    send_SQLQuery();  // Transfer NEO-6M GPS 
-    send_SQLQuery();  // Transfer NEO-6M GPS 
+  // Transfer Data
+  send_SQLQuery(1, lightLevel);  // Transfer BH1750
+  send_SQLQuery(2, temparature);  // Transfer BME280
+  send_SQLQuery(3, pressure);  // Transfer BME280
+  send_SQLQuery(4, humidity);  // Transfer BME280
+  send_SQLQuery(5, (float)bIsRaining);  // Transfer FC-37
+  send_SQLQuery(6, 0);  // Transfer NEO-6M GPS 
+  send_SQLQuery(7, 0);  // Transfer NEO-6M GPS 
 
 }
 
@@ -243,13 +252,39 @@ void send_SQLQuery(int messpunkt, float wert) {
 void print_Status(String statusText) {
   Serial.println(statusText);
   // Status on display
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 10);
-  // Display static text
-  display.println(statusText);
-  display.display(); 
+  printOledLine(statusText);
+  delay(1000);
+}
+
+// print console line to OLED 
+// manages a console buffer of 8 lines (x 21 chars) to simulate a terminal console on OLED
+void printOledLine(String statusText) {
+   if (curLine > 7) {
+      textLines[0] = textLines[1];
+      textLines[1] = textLines[2];
+      textLines[2] = textLines[3];
+      textLines[3] = textLines[4];
+      textLines[4] = textLines[5];
+      textLines[5] = textLines[6];
+      textLines[6] = textLines[7];
+      textLines[7] = statusText.substring(0,21);
+   } else {
+      textLines[curLine] = statusText.substring(0,21);
+      curLine++;
+   }
+   display.clearDisplay();
+   display.setTextSize(1);
+   display.setTextColor(WHITE);
+   display.setCursor(0, 0);
+   display.println(textLines[0]);
+   display.println(textLines[1]);
+   display.println(textLines[2]);
+   display.println(textLines[3]);
+   display.println(textLines[4]);
+   display.println(textLines[5]);
+   display.println(textLines[6]);
+   display.println(textLines[7]);
+   display.display(); 
 }
 
 void printLogo() {
