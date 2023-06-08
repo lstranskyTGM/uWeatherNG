@@ -26,7 +26,7 @@ Read().then((rows) => {
     console.log(rows);
     console.log('Read succesful');
     console.log(mwWert);
-    const win = window.open("uWeather.html")
+    const win = window.open("index.html")
     win.onload = function(){
         document.getElementById("#temp").innerHTML = mwWert
     }
