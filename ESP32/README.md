@@ -1,10 +1,6 @@
-# ToDo List:
+# ESP32:
 
-- [x] Write all test scripts
-- [ ] Write the main script using testscripts
-- [x] Find a power source for the esp32 (akku, solar panel, ...)
-- [ ] 3D print a case for the esp32
-- [ ] Make the sensors protected against rain and direct daylight
+
 
 # Sensor List:
 
@@ -49,8 +45,13 @@ Latitude: °
 Link:
 https://www.amazon.de/dp/B088LR3488?tag=makeradviso01-21&linkCode=osi&th=1&psc=1
 
+# ToDo List:
 
-
+- [x] ~~Write all test scripts~~
+- [x] ~~Write the main script using testscripts~~
+- [x] ~~Find a power source for the esp32 (akku, solar panel, ...)~~
+- [x] ~~3D print a case for the esp32~~
+- [x] ~~Make the sensors protected against rain and direct daylight~~
 
 
 

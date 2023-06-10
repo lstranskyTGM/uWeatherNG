@@ -1,8 +1,25 @@
+# MainScript
+
 # ToDo List:
 
-- [x] Buy Sensors
-- [x] Write testscripts (MySQLConnection, ReadSensors, WriteDisplay, NTPRequest)
-- [x] test if every script works
-- [x] Connect Sensors to esp32
-- [x] Adjust the ntp request script (Change Timezone offset to UTC+1, daylight offset)
-- [x] Adjust the write display script (Add uWeather logo)
+- [x] ~~Implement WiFiConnection~~
+- [x] ~~Implement MySQLConnection~~
+- [x] ~~Implement NTPRequest~~
+- [x] ~~Implement DeepSleep~~
+- [x] ~~Implement ReadSensors (BME280, BH1750)~~
+- [X] ~~Implement ReadRainSensor~~
+- [ ] Implement ReadGPS
+- [x] ~~Implement WriteDisplay~~
+- [x] ~~Check if Code works~~
+
+## Possible Extensions:
+
+- [ ] Implement millis() instead of delay()
+- [ ] Implement Error Handling (goto)
+- [ ] Implement That NTP Request only runs once a day
+- [ ] Implement GPSTracker Wait time (5-10 min ON StartUp)
+- [ ] Implement Use of Networkprotocol MQTT
+- [ ] Implement that the Digital Pinns are only on when needed
+
+
+
