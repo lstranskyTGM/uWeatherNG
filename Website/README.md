@@ -3,15 +3,14 @@
 ## Logo:
 
 <p align="center">
-    <img src="" alt="A picture of a trogon (bird) sitting on a laptop" width="300" align="center">
+    <img src="main/Website/img/logoBlack.png?raw=true" alt="uWeather_Logo" width="300" align="center">
 </p>
-    
 
 ## Mockup:
 
-![websiteMockup]
-
-
+<p align="center">
+    <img src="main/Website/img/mockup.png?raw=true" alt="website_Mockup" width="300" align="center">
+</p>
 
 # ToDo List:
 
