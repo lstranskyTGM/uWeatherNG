@@ -49,9 +49,9 @@ The nearly finished project besides some functions that still needed to be imple
 
 ## Documentations:
 
-- [ESP32 Markdown](tree/main/ESP32)
-- [Database Markdown](tree/main/Datenbank)
-- [Website Markdown](tree/main/Website)
+- [ESP32 Markdown](https://github.com/lstranskyTGM/uWeather/tree/main/ESP32)
+- [Database Markdown](https://github.com/lstranskyTGM/uWeather/tree/main/Database)
+- [Website Markdown](https://github.com/lstranskyTGM/uWeather/tree/main/Website)
 
 ## Unimplemented Functions:
 
@@ -73,6 +73,12 @@ The nearly finished project besides some functions that still needed to be imple
 - Use Networkprotocl MQTT
 - Replace the MySQL Database with a influxDB Database
 - ...
+
+
+
+
+
+
 
 
 
