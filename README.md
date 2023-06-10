@@ -49,9 +49,9 @@ The nearly finished project besides some functions that still needed to be imple
 
 ## Documentations:
 
-- [ESP32 Markdown](main/ESP32)
-- [Database Markdown](main/Datenbank)
-- [Website Markdown](main/Website)
+- [ESP32 Markdown](tree/main/ESP32)
+- [Database Markdown](tree/main/Datenbank)
+- [Website Markdown](tree/main/Website)
 
 ## Unimplemented Functions:
 

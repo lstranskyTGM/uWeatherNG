@@ -3,13 +3,13 @@
 ## Logo:
 
 <p align="center">
-    <img src="main/Website/img/logoBlack.png?raw=true" alt="uWeather_Logo" width="300" align="center">
+    <img src="https://github.com/lstranskyTGM/uWeather/blob/main/Website/img/logoBlack.png?raw=true" alt="uWeather_Logo" width="300" align="center">
 </p>
 
 ## Mockup:
 
 <p align="center">
-    <img src="main/Website/img/mockup.png?raw=true" alt="website_Mockup" width="300" align="center">
+    <img src="https://github.com/lstranskyTGM/uWeather/blob/main/Website/img/mockup.png?raw=true" alt="website_Mockup" width="400" align="center">
 </p>
 
 # ToDo List:

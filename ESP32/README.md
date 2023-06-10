@@ -7,7 +7,7 @@ In the test scripts all functions for the ESP32 are tested seperately. This make
 ## Main Script:
 
 <p align="center">
-    <img src="main/ESP32/codeLogic.png?raw=true" alt="codeLogic" width="300" align="center">
+    <img src="https://github.com/lstranskyTGM/uWeather/blob/main/ESP32/img/codeLogic.png?raw=true" alt="codeLogic" width="300" align="center">
 </p>
 
 The ESP32 starts off setting all pins, variables, ... Then the availability off all devices is checked and the Bootcount updates (that gets saved during DeepSleep). The wifi connection gets established. After that the ESP32 requests an NTP (Network-Time-Protocol) Server and writes the time into the RTC (Real-Time-Clock). Next the MySQL Server is connected to and the sensor data is send to the server. The ESP32 closes all Connections and goes into DeepSleep for a before set Intervall (3-4 minutes). The ESP32 wakes up and starts again.
