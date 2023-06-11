@@ -1,7 +1,7 @@
 # Hardware Box:
 
 <p align="center">
-    <img src="https://github.com/lstranskyTGM/uWeather/blob/main/HardwareBox/img/uWeatherBox1.jpg?raw=true" alt="database" width="500" align="center">
+    <img src="https://github.com/lstranskyTGM/uWeather/blob/main/HardwareBox/img/uWeatherBox1.jpg?raw=true" alt="database" width="600" align="center">
 </p>
 
 The hardware case for all the components of the uWeather project was designed in Fusion 360 and printed with an Original Prusa i3 MK3S+ 3D-printer. There are 3 parts in total. The top in which all the sensors and an OLED Display is mounted. The middle part functions as an seperation and on the bottom attached is the ESP32 and a circuit board with the Powerbank underneath it. 
@@ -21,7 +21,7 @@ Cable connections are realized with dupont connectors.
 <p align="center">
     <img src="https://github.com/lstranskyTGM/uWeather/blob/main/HardwareBox/img/uWeatherBox2.jpg?raw=true" alt="database" width="400" align="center">
     <img src="https://github.com/lstranskyTGM/uWeather/blob/main/HardwareBox/img/uWeatherBox3.jpg?raw=true" alt="database" width="400" align="center">
-    <hr>
+    <br>
     <img src="https://github.com/lstranskyTGM/uWeather/blob/main/HardwareBox/img/uWeatherBox4.jpg?raw=true" alt="database" width="400" align="center">
     <img src="https://github.com/lstranskyTGM/uWeather/blob/main/HardwareBox/img/uWeatherBox5.jpg?raw=true" alt="database" width="400" align="center">
 </p>
