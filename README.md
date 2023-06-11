@@ -4,7 +4,7 @@ A ESP32 Weatherstation Project with a MySQL Database and a Website.
 
 ## Task: 
 
-This Project was a task during the 2. half of the 3. year at the TGM (Technologisches Gewerbemuseum Wien). We needed to form a team of four people and come up with an idea for a project. Which we then had to develop for the next 6 months. During that time we had to document our progress and also made a presentation every month to our teachers.
+This project was a task during the second half of the third year at TGM (Technologisches Gewerbemuseum Wien). We were required to form a team of four people and come up with an idea for a project, which we would then develop over the next six months. Throughout this period, we had to document our progress and give monthly presentations to our teachers.
 
 ## Function:
 
@@ -23,13 +23,13 @@ Website:
 
 ## Development
 
-We splitted the team into FrontEnd and BackEnd. The FrontEnd Team was responsible for the Website and the BackEnd Team was responsible for the ESP32 and the Database. 
+We divided the team into two groups: FrontEnd and BackEnd. The FrontEnd Team was responsible for developing the website, while the BackEnd Team took charge of the ESP32 and the Database. 
 
-This github was created for version control during the development of the project.
+This GitHub repository was created to faciliate version control during the development of the project.
 
-The FrontEnd Team started off by creating a mockup design for the Website and the BackEnd Team wrote the test scripts for the ESP32 and also ordered all necessary parts.
+The FrontEnd Team started off by creating a mockup design for the Website and the BackEnd Team wrote test scripts for the ESP32 and ordered all necessary parts.
 
-Setting up the Database for the MySQL server and writing the SQLCreate File went fairly quick.
+Setting up the Database for the MySQL server and writing the SQLCreate file went fairly quick.
 
 Creating the Website and all the Scripts for the ESP32 took the most time of all. Because the Website needed to be like the mockup design and the ESP32 testscripts needed to be adjusted and also tested with the real sensors set up and connected. 
 
