@@ -50,6 +50,7 @@ The nearly finished project besides some functions that still needed to be imple
 ## Documentations:
 
 - [ESP32 Markdown](https://github.com/lstranskyTGM/uWeather/tree/main/ESP32)
+- [HardwareBox Markdown](https://github.com/lstranskyTGM/uWeather/tree/main/HardwareBox)
 - [Database Markdown](https://github.com/lstranskyTGM/uWeather/tree/main/Database)
 - [Website Markdown](https://github.com/lstranskyTGM/uWeather/tree/main/Website)
 
