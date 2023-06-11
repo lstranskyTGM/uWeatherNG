@@ -1,7 +1,7 @@
 # Database:
 
 <p align="center">
-    <img src="https://github.com/lstranskyTGM/uWeather/blob/main/Database/img/database.png?raw=true" alt="database" width="400" align="center">
+    <img src="https://github.com/lstranskyTGM/uWeather/blob/main/Database/img/database.png?raw=true" alt="database" width="500" align="center">
 </p>
 
 ## Messorte:

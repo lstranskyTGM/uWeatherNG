@@ -3,7 +3,7 @@
 ## Logo:
 
 <p align="center">
-    <img src="https://github.com/lstranskyTGM/uWeather/blob/main/Website/img/logoBlack.png?raw=true" alt="uWeather_Logo" width="300" align="center">
+    <img src="https://github.com/lstranskyTGM/uWeather/blob/main/Website/img/logoBlack.png?raw=true" alt="uWeather_Logo" width="500" align="center">
 </p>
 
 ## Mockup:
