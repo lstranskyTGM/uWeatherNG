@@ -1,0 +1,42 @@
+# YAML file for creation of uWeather Container
+
+version: '3'
+services:
+  # InfluxDB Service
+  influxdb:
+    image: influxdb:2.0
+    ports:
+      - "8086:8086"  
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=admin_password
+      - DOCKER_INFLUXDB_INIT_ORG=my-org
+      - DOCKER_INFLUXDB_INIT_BUCKET=my-bucket
+
+  # Grafana Service
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"  
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin_password
+    depends_on:
+      - influxdb  # Ensures Grafana starts after InfluxDB
+
+  # Apache Service
+  apache:
+    image: httpd:2.4
+    ports:
+      - "80:80"
+    volumes:
+      - ./website:/usr/local/apache2/htdocs/
+
+volumes:
+  influxdb_data:
+  grafana_data:
