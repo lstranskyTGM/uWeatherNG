@@ -8,10 +8,15 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared_container
     command: tunnel run --token yourBase64Token
-    user: root  # Change to non-root user
+    # user: root  
     restart: unless-stopped
     volumes: 
       - cloudflared_config:/etc/cloudflared/
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"  
+        max-file: "5"    
 
   # InfluxDB Service
   influxdb:
@@ -27,6 +32,11 @@ services:
       - DOCKER_INFLUXDB_INIT_PASSWORD=admin_password
       - DOCKER_INFLUXDB_INIT_ORG=my-org
       - DOCKER_INFLUXDB_INIT_BUCKET=my-bucket
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
 
   # Grafana Service
   grafana:
