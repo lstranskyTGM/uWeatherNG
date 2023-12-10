@@ -1,10 +1,22 @@
-# YAML file for creation of uWeather Container
+# YAML file for creation of uWeather Containers
 
 version: '3'
 services:
+  
+  # Cloudflared Service
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared_container
+    command: tunnel run --token yourBase64Token
+    user: root  # Change to non-root user
+    restart: unless-stopped
+    volumes: 
+      - cloudflared_config:/etc/cloudflared/
+
   # InfluxDB Service
   influxdb:
     image: influxdb:2.0
+    container_name: influxdb_container
     ports:
       - "8086:8086"  
     volumes:
@@ -19,6 +31,7 @@ services:
   # Grafana Service
   grafana:
     image: grafana/grafana
+    container_name: grafana_container
     ports:
       - "3000:3000"  
     volumes:
@@ -29,14 +42,19 @@ services:
     depends_on:
       - influxdb  # Ensures Grafana starts after InfluxDB
 
+  # Telegraf Service
+  # Maybe for RasperryPI system metrics
+
   # Apache Service
   apache:
     image: httpd:2.4
+    container_name: apache_container
     ports:
       - "80:80"
     volumes:
       - ./website:/usr/local/apache2/htdocs/
 
 volumes:
+  cloudflared_config:
   influxdb_data:
   grafana_data:
