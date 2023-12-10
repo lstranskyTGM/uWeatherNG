@@ -8,9 +8,6 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared_container
     command: 'tunnel --config /home/cloudflared/.cloudflared/config.yml run'
-    # command: tunnel run --token yourBase64Token
-    # user: root  
-    # restart: unless-stopped
     volumes: 
       - ./cloudflared_conf:/home/cloudflared/.cloudflared/
     logging:
