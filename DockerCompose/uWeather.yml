@@ -7,11 +7,12 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared_container
-    command: tunnel run --token yourBase64Token
+    command: 'tunnel --config /home/cloudflared/.cloudflared/config.yml run'
+    # command: tunnel run --token yourBase64Token
     # user: root  
-    restart: unless-stopped
+    # restart: unless-stopped
     volumes: 
-      - cloudflared_config:/etc/cloudflared/
+      - ./cloudflared_conf:/home/cloudflared/.cloudflared/
     logging:
       driver: json-file
       options:
@@ -65,6 +66,5 @@ services:
       - ./website:/usr/local/apache2/htdocs/
 
 volumes:
-  cloudflared_config:
   influxdb_data:
   grafana_data:

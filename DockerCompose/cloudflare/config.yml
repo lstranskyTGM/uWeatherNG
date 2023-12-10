@@ -2,12 +2,14 @@ tunnel: your-tunnel-id
 credentials-file: /etc/cloudflared/your-tunnel-id.json
 
 ingress:
-  - hostname: uWeather.net
+  - hostname: uweather.net
     service: http://apache:80
-  - hostname: uWeather.net/dashboard
+  - hostname: uweather.net/dashboard
     service: http://grafana:3000
-  - hostname: influxdb.uWeather.net
+  - hostname: influxdb.uweather.net
     service: http://influxdb:8086
+
     path: /api/v2/write
     methods: [POST]
   - service: http_status:404  # Catch-all rule
+  
