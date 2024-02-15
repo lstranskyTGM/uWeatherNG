@@ -9,12 +9,29 @@ services:
     container_name: cloudflared_container
     command: 'tunnel --config /home/cloudflared/.cloudflared/config.yml run'
     volumes: 
-      - ./cloudflared_conf:/home/cloudflared/.cloudflared/
+      - ./cloudflared_config:/home/cloudflared/.cloudflared/
     logging:
       driver: json-file
       options:
         max-size: "50m"  
         max-file: "5"    
+
+  # Mosquitto Service
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto_container
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    volumes:
+      - ./mosquitto_config:/mosquitto/config
+      - mosquitto_data:/mosquitto/data
+      # - mosquitto_log:/mosquitto/log
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"  
 
   # InfluxDB Service
   influxdb:
@@ -51,7 +68,19 @@ services:
       - influxdb  # Ensures Grafana starts after InfluxDB
 
   # Telegraf Service
-  # Maybe for RasperryPI system metrics
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf_container
+    volumes:
+      - ./telegraf_config:/etc/telegraf:ro
+    depends_on: # Ensures Telegraf starts after InfluxDB and Mosquitto
+      - influxdb
+      - mosquitto
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "5"
 
   # Apache Service
   apache:
@@ -65,3 +94,4 @@ services:
 volumes:
   influxdb_data:
   grafana_data:
+  mosquitto_data:
