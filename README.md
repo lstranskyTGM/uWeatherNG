@@ -1,6 +1,6 @@
 # uWeather_Project
 
-A ESP32 Weatherstation Project with a MySQL Database and a Website.
+An ESP32 Weatherstation Project with a MySQL Database and a Website.
 
 ## Task: 
 
