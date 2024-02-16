@@ -26,7 +26,7 @@ services:
     volumes:
       - ./mosquitto_config:/mosquitto/config
       - mosquitto_data:/mosquitto/data
-      # - mosquitto_log:/mosquitto/log
+      - mosquitto_log:/mosquitto/log
     logging:
       driver: json-file
       options:
@@ -95,3 +95,4 @@ volumes:
   influxdb_data:
   grafana_data:
   mosquitto_data:
+  mosquitto_log:
