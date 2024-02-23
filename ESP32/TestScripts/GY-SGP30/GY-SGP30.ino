@@ -1,3 +1,7 @@
+/*
+ * This is a test file for the GY-SGP30 Air Quality Sensor
+ */
+
 #include <Wire.h>
 #include "Adafruit_SGP30.h"
 

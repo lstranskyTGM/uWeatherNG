@@ -1,3 +1,7 @@
+/*
+ * This is a test file for the CCS811 Air Quality Sensor
+ */
+
 #include "Adafruit_CCS811.h"
  
 Adafruit_CCS811 ccs;
