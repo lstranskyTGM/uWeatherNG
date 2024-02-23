@@ -7,11 +7,12 @@
 
 File myFile;
 
+// Change this to Module CS pin
 #define chipSelect 34
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(115200);
 
   Serial.print("Initializing SD card...");
 
@@ -24,84 +25,55 @@ void setup() {
 
   // Example usage with a filepath
   char filepath[] = "test.txt";
+  char textToWrite[] = "Lorem ipsum dolor sit";
 
   // Write File
-  writeFile(filepath);
+  writeFile(filepath, textToWrite);
 
   // Read File
   readFile(filepath);
 
   // Delete File
-  // deleteFile(filepath);
+  deleteFile(filepath);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  // Not used in this script
 }
 
-// Checks if File exists (False: attempts to create file)
-bool checkFileExist(const char* filepath) {
-  if (SD.exists(filepath))
-    return true;
-  else
-  {
-    Serial.println(String(filepath) + " doesn't exist.");
-    // Open and close new File to creat it
-    Serial.println("Creating " + String(filepath));
-    myFile = SD.open(filepath, FILE_WRITE);
-    myFile.close();
-    // Check again if File exists
-    if (SD.exists(filepath)) {
-      Serial.println(String(filepath) + " successfully created");
-      return true;
-    }
-    else {
-      Serial.println("Error: " + String(filepath) + " can not be created");
-      return false;
-    }
-  }
-}
-
-void writeFile(const char* filepath) {
-  if (checkFileExist(filepath)) {
-    // Open file
-    myFile = SD.open(filepath, FILE_WRITE);
-    // Write file
+void writeFile(const char* filepath, const char* text) {
+  // Open file for writing
+  myFile = SD.open(filepath, FILE_WRITE);
+  if (myFile) {
     Serial.println("Writing to " + String(filepath));
-    myFile.println("Lorem ipsum dolor sit");
-    // Close file
-    myFile.close();
-    // Status message
-    Serial.println("Writing finished");
+    myFile.println(text); // Write text to file
+    myFile.close(); // Close the file
+    Serial.println("Writing finished.");
   } else {
-    Serial.println("Error: Can't write File that does not exist / can not be created");
+    Serial.println("Error opening " + String(filepath) + " for writing.");
   }
 }
 
 void readFile(const char* filepath) {
-  if (checkFileExist(filepath)) {
-    // Open file
-    myFile = SD.open(filepath, FILE_READ);
-    // Read from the file until there's nothing else in it:
+  // Open file for reading
+  myFile = SD.open(filepath, FILE_READ);
+  if (myFile) {
     Serial.println("Reading " + String(filepath));
     while (myFile.available()) {
-      Serial.write(myFile.read());
+      Serial.write(myFile.read()); // Read and print the content
     }
-    // Status message
-    Serial.println("Reading finished");
+    myFile.close(); // Close the file
+    Serial.println("Reading finished."); 
   } else {
-    Serial.println("Error: Can't read File that does not exist / can not be created");
+    Serial.println("Error opening " + String(filepath) + " for reading.");
   }
 }
 
 void deleteFile(const char* filepath) {
-  if (SD.exists(filepath)) {
-    if (SD.remove(filepath)) {
-      Serial.println(String(filepath) + " has been deleted.");
-    } else {
-      Serial.println("Error: Could not delete " + String(filepath));
-    }
+  // Remove file
+  if (SD.remove(filepath)) {
+    Serial.println(String(filepath) + " has been deleted.");
   } else {
-    Serial.println(String(filepath) + " does not exist, so it cannot be deleted.");
+    Serial.println("Error: Could not delete " + String(filepath));
   }
 }
