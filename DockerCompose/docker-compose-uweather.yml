@@ -24,7 +24,7 @@ services:
       - "1883:1883"
       - "9001:9001"
     volumes:
-      - ./mosquitto_config:/mosquitto/config
+      - ./mosquitto_config:/mosquitto/config # Mosquitto config file invalid
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
     logging:
