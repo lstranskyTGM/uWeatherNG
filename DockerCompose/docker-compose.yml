@@ -10,11 +10,6 @@ services:
     command: 'tunnel --config /home/cloudflared/.cloudflared/config.yml run'
     volumes: 
       - ./cloudflared_config:/home/cloudflared/.cloudflared/
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"  
-        max-file: "5"    
 
   # Mosquitto Service
   mosquitto:
@@ -27,11 +22,16 @@ services:
       - ./mosquitto_config:/mosquitto/config
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "5"  
+
+  # Telegraf Service
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf_container
+    volumes:
+      - ./telegraf_config:/etc/telegraf:ro
+    depends_on: # Ensures Telegraf starts after InfluxDB and Mosquitto
+      - influxdb
+      - mosquitto
 
   # InfluxDB Service
   influxdb:
@@ -47,11 +47,6 @@ services:
       - DOCKER_INFLUXDB_INIT_PASSWORD=admin_password
       - DOCKER_INFLUXDB_INIT_ORG=my-org
       - DOCKER_INFLUXDB_INIT_BUCKET=my-bucket
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "5"
 
   # Grafana Service
   grafana:
@@ -66,21 +61,6 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin_password
     depends_on:
       - influxdb  # Ensures Grafana starts after InfluxDB
-
-  # Telegraf Service
-  telegraf:
-    image: telegraf:latest
-    container_name: telegraf_container
-    volumes:
-      - ./telegraf_config:/etc/telegraf:ro
-    depends_on: # Ensures Telegraf starts after InfluxDB and Mosquitto
-      - influxdb
-      - mosquitto
-    logging:
-      driver: json-file
-      options:
-        max-size: "50m"
-        max-file: "5"
 
   # Apache Service
   apache:
