@@ -1,0 +1,63 @@
+# YAML file for creation of uWeather Containers
+
+version: '3.8'
+services:
+  
+  # Cloudflared Service
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared_container
+    command: 'tunnel --config /home/cloudflared/.cloudflared/config.yml run'
+    volumes: 
+      - ./cloudflared_config:/home/cloudflared/.cloudflared/
+
+  # Telegraf Service
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf_container
+    volumes:
+      - ./telegraf_config:/etc/telegraf:ro
+    depends_on: # Ensures Telegraf starts after InfluxDB
+      - influxdb
+
+  # InfluxDB Service
+  influxdb:
+    image: influxdb:latest # 2.7.5 tested
+    container_name: influxdb_container
+    ports:
+      - "8086:8086"  
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=admin_password
+      - DOCKER_INFLUXDB_INIT_ORG=my-org
+      - DOCKER_INFLUXDB_INIT_BUCKET=my-bucket
+
+  # Grafana Service
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana_container
+    ports:
+      - "3000:3000"  
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin_password
+    depends_on:
+      - influxdb  # Ensures Grafana starts after InfluxDB
+
+  # Apache Service
+  apache:
+    image: httpd:latest # 2.4 tested
+    container_name: apache_container
+    ports:
+      - "80:80"
+    volumes:
+      - ./website:/usr/local/apache2/htdocs/
+
+volumes:
+  influxdb_data:
+  grafana_data:

@@ -1,0 +1,15 @@
+tunnel: your-tunnel-id
+credentials-file: /home/cloudflared/.cloudflared/your-tunnel-id.json
+
+ingress:
+  - hostname: mosquitto.uweather.net
+    service: http://mosquitto:9001
+  - hostname: influxdb.uweather.net
+    service: http://influxdb:8086
+    path: /api/v2/write
+    methods: [POST]
+  - hostname: grafana.uweather.net
+    service: http://grafana:3000
+  - hostname: uweather.net
+    service: http://apache:80
+  - service: http_status:404  # Catch-all rule
