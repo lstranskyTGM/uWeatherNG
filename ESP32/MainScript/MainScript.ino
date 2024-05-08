@@ -63,7 +63,7 @@ RTC_DATA_ATTR boolean requestedNTP;
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define OLED_RESET     -1 // Reset pin
 #define SCREEN_ADDRESS 0x3C // Address 0x3D for 128x64
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_SH110X display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // Declarations for OLED console buffer
 String textLines[]={"", "", "", "", "", "", "", ""};
