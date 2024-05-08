@@ -92,14 +92,14 @@ void setup() {
   delay(2000);
 
   ++bootCount;
-  print_Status("BootCount: "+String(bootCount));
+  printStatus("BootCount: "+String(bootCount));
 
   // connect_to_WiFi();
 
   // get_network_info();
 
   if (requestedNTP == false) {
-    request_NTP_set_RTC();
+    requestNTP();
     requestedNTP = true;
   }
 
@@ -111,7 +111,7 @@ void setup() {
   // WiFi.disconnect();
   // print_Status("Disconnected from WiFi");
 
-  start_DeepSleep();
+  startDeepSleep();
 }
 
 void loop() {
@@ -119,34 +119,34 @@ void loop() {
 }
 
 // Connect to Wi-Fi network
-void connect_to_WiFi() {
+void connectToWiFi() {
   WiFi.begin(wifi_ssid, wifi_password);
   // Stuck in loop (needs to be fixed)
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
-    print_Status("Connecting to WiFi...");
+    printStatus("Connecting to WiFi...");
   }
-  print_Status("Connected to WiFi");
+  printStatus("Connected to WiFi");
 }
 
 // Gets all the network info
-void get_network_info(){
+void getNetworkInfo(){
     if(WiFi.status() == WL_CONNECTED) {
-        print_Status("SSID="+String(wifi_ssid));
-        print_Status("IP="+String(WiFi.localIP()));
-        print_Status("SubnetMask="+String(WiFi.subnetMask()));
-        print_Status("Gateway="+String(WiFi.gatewayIP()));
-        print_Status("RSSI="+String(WiFi.RSSI())+" dB");
-        print_Status("Encryption="+String(WiFi.encryptionType()));
+        printStatus("SSID="+String(wifi_ssid));
+        printStatus("IP="+String(WiFi.localIP()));
+        printStatus("SubnetMask="+String(WiFi.subnetMask()));
+        printStatus("Gateway="+String(WiFi.gatewayIP()));
+        printStatus("RSSI="+String(WiFi.RSSI())+" dB");
+        printStatus("Encryption="+String(WiFi.encryptionType()));
     }
 }
 
 // Connects to an NTP and sets the time of the integrated RTC Module
-void request_NTP_set_RTC() {
+void requestNTP() {
   print_Status("Requesting NTP Server...");
   // Init and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  print_Status("Request successfull");
+  printStatus("Request successfull");
 
   print_Status("Writing Time to RTC..");
   // Set rtc time using NTP
@@ -154,11 +154,11 @@ void request_NTP_set_RTC() {
   if (getLocalTime(&timeinfo)){
       rtc.setTimeStruct(timeinfo); 
   }
-  print_Status("Write successfull");
+  printStatus("Write successfull");
 }
 
 // Starts DeepSleep and sets wakeup event
-void start_DeepSleep() {
+void startDeepSleep() {
   print_Status("Set DeepSleep WakeUp..");
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
 
@@ -168,7 +168,7 @@ void start_DeepSleep() {
 }
 
 // Initalizes and setups all Devices
-void initalize_Devices() {
+void initalizeDevices() {
   Wire.begin();
 
   // Initalize Display
@@ -184,7 +184,7 @@ void initalize_Devices() {
   bool status;
   status = bme.begin(0x76); 
   if (!status) {
-    print_Status("Could not find a valid BME280 sensor, check wiring!");
+    printStatus("Could not find a valid BME280 sensor, check wiring!");
   }
 
   // Initalize NEO-6M GPS Tracker
@@ -193,21 +193,21 @@ void initalize_Devices() {
 }
 
 // Reads and sends the Data from the Sensors to the MySQL Server
-void transfer_SensorData() {
+void transferSensorData() {
 
-  print_Status("Reading sensor data..");
+  printStatus("Reading sensor data..");
 
   // Read BH1750
   float lightLevel = lightMeter.readLightLevel();
-  print_Status("LightLevel="+String(lightLevel));
+  printStatus("LightLevel="+String(lightLevel));
 
   // Read BME280
   float temparature = bme.readTemperature();
   float pressure = bme.readPressure() / 100.0F;
   float humidity = bme.readHumidity();
-  print_Status("Temperature="+String(temperature));
-  print_Status("Pressure="+String(pressure));
-  print_Status("Humidity="+String(humidity));
+  printStatus("Temperature="+String(temperature));
+  printStatus("Pressure="+String(pressure));
+  printStatus("Humidity="+String(humidity));
 
   // Read FC-37
   int rainAnalogVal = analogRead(rainAnalog);
@@ -217,9 +217,9 @@ void transfer_SensorData() {
     bIsRaining = false;
   }
   if (bIsRaining) {
-    print_Status("Raining=YES");
+    printStatus("Raining=YES");
   } else {
-    print_Status("Raining=NO");
+    printStatus("Raining=NO");
   }
 
   // Read NEO-6M GPS Tracker
@@ -233,7 +233,7 @@ void transfer_SensorData() {
 // MQTT Publish
 // rtc.getTime("%A, %B %d %Y %H:%M:%S")
 
-void print_Status(String statusText) {
+void printStatus(String statusText) {
   Serial.println(statusText);
   // Status on display
   printOledLine(statusText);
