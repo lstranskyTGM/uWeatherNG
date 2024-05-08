@@ -12,7 +12,7 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
 #include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <Adafruit_SH110X.h>
 #include <TinyGPSPlus.h>
 #include <HardwareSerial.h>
 
@@ -172,10 +172,10 @@ void initalize_Devices() {
   Wire.begin();
 
   // Initalize Display
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) { 
-    Serial.println(F("SSD1306 allocation failed"));
+  if (!display.begin(SCREEN_ADDRESS, true)) { 
+    Serial.println(F("SH110X allocation failed"));
   }
-  Serial.println(F("SSD1306 allocation successfull"));
+  Serial.println(F("SH110X allocation successfull"));
 
   // Initalize BH1750
   lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE, 0x23);
