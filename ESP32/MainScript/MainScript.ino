@@ -5,8 +5,6 @@
 
 // Libraries
 #include <WiFi.h>
-#include <MySQL_Connection.h>
-#include <MySQL_Cursor.h>
 #include "time.h"
 #include <ESP32Time.h>
 #include <Wire.h>
@@ -18,20 +16,31 @@
 #include <TinyGPSPlus.h>
 #include <HardwareSerial.h>
 
-// Replace with your network login data
+// GPRS credentials
+// const char apn[] = "YourAPN";
+// const char gprsUser[] = "YourGPRSUsername";
+// const char gprsPass[] = "YourGPRSPassword";
+
+// MQTT Broker details
+// const char* broker = "mqtt.broker.net";
+// const int port = 8883;
+// const char* client_id = "YourClientID"; 
+// const char* mqtt_username = "YourMQTTUsername";
+// const char* mqtt_password = "YourMQTTPassword";
+
+// Other Settings
+// const bool retain_messages = false;
+// const int qos_level = 2;
+
+// MQTT Topics
+// const char* topicSensors = "sensors/data";
+
+// Wifi login data
 const char* wifi_ssid = "REPLACE_WITH_WIFI_SSID";
 const char* wifi_password = "REPLACE_WITH_WIFI_PASSWORD";
 
-// Replace with your MySQL server login data
-IPAddress db_server_addr(0, 0, 0, 0);
-int db_port = 3306; 
-char db_user[] = "REPLACE_WITH_DB_USER"; 
-char db_password[] = "REPLACE_WITH_DB_PASSWORD"; 
-
 // Declarations for WiFi
 WiFiClient client;
-MySQL_Connection conn(&client);
-MySQL_Cursor* cursor;
 
 // Declarations for NTP
 const char* ntpServer = "pool.ntp.org";
@@ -85,26 +94,22 @@ void setup() {
   ++bootCount;
   print_Status("BootCount: "+String(bootCount));
 
-  connect_to_WiFi();
+  // connect_to_WiFi();
 
-  get_network_info();
+  // get_network_info();
 
   if (requestedNTP == false) {
     request_NTP_set_RTC();
     requestedNTP = true;
   }
 
-  connect_to_MySQL();
+  // connect_to_MySQL();
 
-  transfer_SensorData();
-
-  // Disconnect from MySQL server
-  conn.close();
-  print_Status("Disconnected from MySQL server");
+  // transfer_SensorData();
 
   // Disconnect from WiFi
-  WiFi.disconnect();
-  print_Status("Disconnected from WiFi");
+  // WiFi.disconnect();
+  // print_Status("Disconnected from WiFi");
 
   start_DeepSleep();
 }
@@ -122,17 +127,6 @@ void connect_to_WiFi() {
     print_Status("Connecting to WiFi...");
   }
   print_Status("Connected to WiFi");
-}
-
-// Establish a MySQL connection
-void connect_to_MySQL() {
-  Serial.print("Connecting to MySQL..");
-  if (conn.connect(db_server_addr, db_port, db_user, db_password)) {
-    print_Status("Connected to MySQL");
-  }
-  else {
-    print_Status("MySQL connect failed");
-  }
 }
 
 // Gets all the network info
@@ -232,22 +226,12 @@ void transfer_SensorData() {
 
 
   // Transfer Data
-  send_SQLQuery(1, lightLevel);  // Transfer BH1750
-  send_SQLQuery(2, temparature);  // Transfer BME280
-  send_SQLQuery(3, pressure);  // Transfer BME280
-  send_SQLQuery(4, humidity);  // Transfer BME280
-  send_SQLQuery(5, (float)bIsRaining);  // Transfer FC-37
-  send_SQLQuery(6, 0);  // Transfer NEO-6M GPS 
-  send_SQLQuery(7, 0);  // Transfer NEO-6M GPS 
+  
 
 }
 
-void send_SQLQuery(int messpunkt, float wert) {
-  MySQL_Cursor *cursor = new MySQL_Cursor(&conn);
-  char query = "INSERT INTO usr_web204_3.Messpunkte (mw_messpunkt, mw_messort, mw_wert, mw_datumZeit) VALUES("+messpunkt+", "+ESP32_ID+", "+wert+", "+rtc.getTime("%A, %B %d %Y %H:%M:%S")+");");
-  cursor->execute(query);
-  delete cursor;
-}
+// MQTT Publish
+// rtc.getTime("%A, %B %d %Y %H:%M:%S")
 
 void print_Status(String statusText) {
   Serial.println(statusText);
