@@ -11,6 +11,7 @@
 #include <BH1750.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
+#include "Adafruit_SGP30.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
 #include <TinyGPSPlus.h>
@@ -57,6 +58,7 @@ ESP32Time rtc;
 // Variables that get saved during DeepSleep
 RTC_DATA_ATTR int bootCount = 0;
 RTC_DATA_ATTR boolean requestedNTP;
+RTC_DATA_ATTR boolean bIsRaining;
 
 // Declarations for Display
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
@@ -70,15 +72,15 @@ String textLines[]={"", "", "", "", "", "", "", ""};
 int curLine=0;
 
 // Declarations for Weather Sensors
-BH1750 lightMeter;
-Adafruit_BME280 bme; 
-#define rainAnalog 35;
-RTC_DATA_ATTR boolean bIsRaining;
+BH1750 lightMeter; // Light Sensor
+Adafruit_BME280 bme; // BME280 Temperature, Pressure, and Humidity Sensor 
+#define rainAnalog 35; // Rain Sensor (True/False)
+Adafruit_SGP30 sgp; // SGP30 Air Quality Sensor
 
 // Declarations for GPS Sensor
-static const int RXPin = 17, TXPin = 16;
-TinyGPSPlus gps;  // The TinyGPSPlus object
-HardwareSerial SerialGPS(1);  // The serial connection to the GPS device
+// static const int RXPin = 17, TXPin = 16;
+// TinyGPSPlus gps;  // The TinyGPSPlus object
+// HardwareSerial SerialGPS(1);  // The serial connection to the GPS device
 
 // ESP32 ID
 static const int ESP32_ID = 101;
@@ -174,25 +176,54 @@ void initalizeDevices() {
   // Initalize Display
   if (!display.begin(SCREEN_ADDRESS, true)) { 
     Serial.println(F("SH110X allocation failed"));
+  } else {
+    Serial.println(F("SH110X allocation successfull"));
   }
-  Serial.println(F("SH110X allocation successfull"));
 
   // Initalize BH1750
   lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE, 0x23);
-
-  // Initalize BME280
-  bool status;
-  status = bme.begin(0x76); 
-  if (!status) {
-    printStatus("Could not find a valid BME280 sensor, check wiring!");
+  float lux = lightMeter.readLightLevel();  // Try reading a value
+  if (lux == 0.0) { // Zero lux reading
+    printStatus("BH1750 zero lux detected - check wiring.");
+  } else {
+    Serial.println(F("BH1750 initialization successful"));
   }
 
-  // Initalize NEO-6M GPS Tracker
-  
+  // Initalize BME280
+  if (! bme.begin(0x76)) {
+    printStatus("BME280 sensor not found - check connections.");
+  } else {
+    Serial.println(F("BME280 initialization successful"));
+  }
+
+  // Initalize SGP30
+  if (! sgp.begin()){
+    printStatus("SGP30 sensor not found - check connections.");
+  } else {
+    Serial.println("SGP30 initialization successful");
+    Serial.print("Found SGP30 serial #");
+    Serial.print(sgp.serialnumber[0], HEX);
+    Serial.print(sgp.serialnumber[1], HEX);
+    Serial.println(sgp.serialnumber[2], HEX);
+
+    // Humidity compensation
+    sgp.setHumidity(getAbsoluteHumidity(bme.readTemperature(), bme.readHumidity()));
+
+    // Update Baseline values
+    if (bootCount % 30 == 0) {
+      uint16_t TVOC_base, eCO2_base;
+      if (sgp.getIAQBaseline(&eCO2_base, &TVOC_base)) {
+        printStatus("Baseline eCO2: 0x" + String(eCO2_base, HEX));
+        printStatus("Baseline TVOC: 0x" + String(TVOC_base, HEX));
+      } else {
+        printStatus("Failed to get baseline readings");
+      }
+    }
+  }
   
 }
 
-// Reads and sends the Data from the Sensors to the MySQL Server
+// Reads and sends the Data from the Sensors to MQTT Server
 void transferSensorData() {
 
   printStatus("Reading sensor data..");
@@ -222,8 +253,15 @@ void transferSensorData() {
     printStatus("Raining=NO");
   }
 
-  // Read NEO-6M GPS Tracker
-
+  // Read SGP30
+  unsigned int tvoc = sgp.TVOC;
+  unsigned int eco2 = sgp.eC02; 
+  // unsigned int rawH2 = sgp.rawH2;
+  // unsigned int rawEthanol = sgp.rawEthanol;
+  printStatus("TVOC="+String(tvoc)+"ppb");
+  printStatus("eC02="+String(eco2)+"ppm");
+  // printStatus("rawH2="+String(rawH2));
+  // printStatus("rawEthanol="+String(rawEthanol));
 
   // Transfer Data
   
@@ -233,6 +271,7 @@ void transferSensorData() {
 // MQTT Publish
 // rtc.getTime("%A, %B %d %Y %H:%M:%S")
 
+// Prints the Status on the Serial Monitor and OLED
 void printStatus(String statusText) {
   Serial.println(statusText);
   // Status on display
@@ -271,6 +310,7 @@ void printOledLine(String statusText) {
    display.display(); 
 }
 
+// Prints the uweather Logo
 void printLogo() {
 
   // 'uweather', 128x64px
@@ -346,5 +386,16 @@ void printLogo() {
   display.drawBitmap(0, 0, uWeather, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE);
   display.display();
 
+}
+
+/* return absolute humidity [mg/m^3] with approximation formula
+* @param temperature [°C]
+* @param humidity [%RH]
+*/
+uint32_t getAbsoluteHumidity(float temperature, float humidity) {
+    // approximation formula from Sensirion SGP30 Driver Integration chapter 3.15
+    const float absoluteHumidity = 216.7f * ((humidity / 100.0f) * 6.112f * exp((17.62f * temperature) / (243.12f + temperature)) / (273.15f + temperature)); // [g/m^3]
+    const uint32_t absoluteHumidityScaled = static_cast<uint32_t>(1000.0f * absoluteHumidity); // [mg/m^3]
+    return absoluteHumidityScaled;
 }
 
