@@ -14,7 +14,6 @@
 #include "Adafruit_SGP30.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
-#include <TinyGPSPlus.h>
 #include <HardwareSerial.h>
 
 // GPRS credentials
@@ -57,8 +56,8 @@ ESP32Time rtc;
 
 // Variables that get saved during DeepSleep
 RTC_DATA_ATTR int bootCount = 0;
-RTC_DATA_ATTR boolean requestedNTP;
-RTC_DATA_ATTR boolean bIsRaining;
+RTC_DATA_ATTR boolean requestedNTP; // If NTP Server was already requested
+RTC_DATA_ATTR boolean bIsRaining; // Last Known Rain Value for next boot
 
 // Declarations for Display
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
@@ -74,13 +73,13 @@ int curLine=0;
 // Declarations for Weather Sensors
 BH1750 lightMeter; // Light Sensor
 Adafruit_BME280 bme; // BME280 Temperature, Pressure, and Humidity Sensor 
-#define rainAnalog 35; // Rain Sensor (True/False)
 Adafruit_SGP30 sgp; // SGP30 Air Quality Sensor
+#define rainAnalog 35; // Rain Sensor Analog Pin
+#define hallDigital 23; // KY-003 Hall Sensor Digital Pin
 
-// Declarations for GPS Sensor
-// static const int RXPin = 17, TXPin = 16;
-// TinyGPSPlus gps;  // The TinyGPSPlus object
-// HardwareSerial SerialGPS(1);  // The serial connection to the GPS device
+// Declarations for Hall Sensor
+volatile int rotationCount = 0; // Counts Rotations (volatile for interrupts)
+unsigned long measurementDuration = 10000; // Measurement duration in milliseconds (10 seconds)
 
 // ESP32 ID
 static const int ESP32_ID = 101;
@@ -220,7 +219,13 @@ void initalizeDevices() {
       }
     }
   }
-  
+
+  // Initalize KY-003
+  pinMode(hallDigital, INPUT);
+  printStatus("KY-003 sensor initalized");
+
+  // Initalize Wind Vane
+
 }
 
 // Reads and sends the Data from the Sensors to MQTT Server
@@ -230,15 +235,15 @@ void transferSensorData() {
 
   // Read BH1750
   float lightLevel = lightMeter.readLightLevel();
-  printStatus("LightLevel="+String(lightLevel));
+  printStatus("LightLevel="+String(lightLevel)+"lux");
 
   // Read BME280
   float temparature = bme.readTemperature();
   float pressure = bme.readPressure() / 100.0F;
   float humidity = bme.readHumidity();
-  printStatus("Temperature="+String(temperature));
-  printStatus("Pressure="+String(pressure));
-  printStatus("Humidity="+String(humidity));
+  printStatus("Temperature="+String(temperature)+"°C");
+  printStatus("Pressure="+String(pressure)+"hPa");
+  printStatus("Humidity="+String(humidity)+"%RH");
 
   // Read FC-37
   int rainAnalogVal = analogRead(rainAnalog);
@@ -263,10 +268,40 @@ void transferSensorData() {
   // printStatus("rawH2="+String(rawH2));
   // printStatus("rawEthanol="+String(rawEthanol));
 
+  // Read KY-003
+  measureWindSpeed();
+
   // Transfer Data
   
 
 }
+
+/**
+ * Measures wind speed by counting rotations detected by the KY-003 Hall sensor.
+ * The function attaches an interrupt to the sensor, counts rotations for a fixed duration,
+ * and then calculates the wind speed based on the number of rotations.
+ * @return The calculated wind speed in meters per second.
+ */
+float measureWindSpeed() {
+  unsigned long startMillis = millis(); // Record start time
+  unsigned long currentMillis;
+  rotationCount = 0; // Reset rotation count at the beginning
+
+  // Attach interrupt to count rotations
+  attachInterrupt(digitalPinToInterrupt(SENSOR_PIN), countRotation, RISING);
+
+  // Loop until measurementDuration passes
+  do {
+    currentMillis = millis(); // Update current time
+  } while (currentMillis - startMillis < measurementDuration);
+
+  // Detach the interrupt to stop counting
+  detachInterrupt(digitalPinToInterrupt(SENSOR_PIN));
+
+  // Assuming each rotation is 1 meter of wind travel, adjust as per your anemometer's spec
+  // windSpeed = (rotationCount * 1.0 /* meters per rotation */) / (5 /* measurement interval in seconds */);
+  return calculateWindSpeed(rotationCount, measurementDuration);
+} 
 
 // MQTT Publish
 // rtc.getTime("%A, %B %d %Y %H:%M:%S")
@@ -388,14 +423,39 @@ void printLogo() {
 
 }
 
-/* return absolute humidity [mg/m^3] with approximation formula
-* @param temperature [°C]
-* @param humidity [%RH]
-*/
+/**
+ * return absolute humidity [mg/m^3] with approximation formula
+ * @param temperature [°C]
+ * @param humidity [%RH]
+ * @return The absolute humidity in milligrams per cubic meter (mg/m^3).
+ */
 uint32_t getAbsoluteHumidity(float temperature, float humidity) {
     // approximation formula from Sensirion SGP30 Driver Integration chapter 3.15
     const float absoluteHumidity = 216.7f * ((humidity / 100.0f) * 6.112f * exp((17.62f * temperature) / (243.12f + temperature)) / (273.15f + temperature)); // [g/m^3]
     const uint32_t absoluteHumidityScaled = static_cast<uint32_t>(1000.0f * absoluteHumidity); // [mg/m^3]
     return absoluteHumidityScaled;
+}
+
+/**
+ * Calculates wind speed based on the number of rotations of an anemometer and the duration of measurement.
+ * Assumes each rotation corresponds to a unit distance (e.g., 1 meter) traveled by the wind.
+ * @param rotations The number of rotations detected.
+ * @param duration The duration of the measurement in milliseconds.
+ * @return The wind speed in meters per second.
+ */
+float calculateWindSpeed(int rotations, unsigned long duration) {
+  // Convert duration from milliseconds to seconds
+  float durationInSeconds = duration / 1000.0;
+  // Assuming each rotation is 1 meter of wind travel, adjust as per your anemometer's spec
+  return (rotations * 1.0) / durationInSeconds;
+}
+
+/**
+ * Interrupt service routine for counting rotations.
+ * This function increments the global variable `rotationCount` each time a rotation is detected.
+ * Should be attached to a digital pin set to interrupt on the rising edge.
+ */
+void countRotation() {
+  rotationCount++;
 }
 
