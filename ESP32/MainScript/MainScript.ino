@@ -63,8 +63,9 @@ RTC_DATA_ATTR boolean bIsRaining; // Last Known Rain Value for next boot
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 #define OLED_RESET     -1 // Reset pin
-#define SCREEN_ADDRESS 0x3C // Address 0x3D for 128x64
-Adafruit_SH110X display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+#define SCREEN_ADDRESS 0x3c // Address 0x3D for 128x64
+#define WHITE 1
+Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // Declarations for OLED console buffer
 String textLines[]={"", "", "", "", "", "", "", ""};
@@ -74,8 +75,8 @@ int curLine=0;
 BH1750 lightMeter; // Light Sensor
 Adafruit_BME280 bme; // BME280 Temperature, Pressure, and Humidity Sensor 
 Adafruit_SGP30 sgp; // SGP30 Air Quality Sensor
-#define rainAnalog 35; // Rain Sensor Analog Pin
-#define hallDigital 23; // KY-003 Hall Sensor Digital Pin
+#define rainAnalog 35 // Rain Sensor Analog Pin
+#define hallDigital 34 // KY-003 Hall Sensor Digital Pin
 
 // Declarations for Hall Sensor
 volatile int rotationCount = 0; // Counts Rotations (volatile for interrupts)
@@ -86,7 +87,6 @@ static const int ESP32_ID = 101;
 
 void setup() {
   Serial.begin(115200);
-  SerialGPS.begin(9600, SERIAL_8N1, TXPin, RXPin);
 
   initalizeDevices();
   printLogo();
@@ -99,14 +99,14 @@ void setup() {
 
   // get_network_info();
 
-  if (requestedNTP == false) {
-    requestNTP();
-    requestedNTP = true;
-  }
+  //if (requestedNTP == false) {
+  //  requestNTP();
+  //  requestedNTP = true;
+  //}
 
   // connect_to_MySQL();
 
-  // transfer_SensorData();
+  transferSensorData();
 
   // Disconnect from WiFi
   // WiFi.disconnect();
@@ -138,18 +138,18 @@ void getNetworkInfo(){
         printStatus("SubnetMask="+String(WiFi.subnetMask()));
         printStatus("Gateway="+String(WiFi.gatewayIP()));
         printStatus("RSSI="+String(WiFi.RSSI())+" dB");
-        printStatus("Encryption="+String(WiFi.encryptionType()));
+//        printStatus("Encryption="+String(WiFi.encryptionType()));
     }
 }
 
 // Connects to an NTP and sets the time of the integrated RTC Module
 void requestNTP() {
-  print_Status("Requesting NTP Server...");
+  printStatus("Requesting NTP Server...");
   // Init and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   printStatus("Request successfull");
 
-  print_Status("Writing Time to RTC..");
+  printStatus("Writing Time to RTC..");
   // Set rtc time using NTP
   struct tm timeinfo;
   if (getLocalTime(&timeinfo)){
@@ -160,10 +160,10 @@ void requestNTP() {
 
 // Starts DeepSleep and sets wakeup event
 void startDeepSleep() {
-  print_Status("Set DeepSleep WakeUp..");
+  printStatus("Set DeepSleep WakeUp..");
   esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
 
-  print_Status("Starting DeepSleep..");
+  printStatus("Starting DeepSleep..");
   Serial.flush(); // Waits for the transmisson of outgoing serial data to complete
   esp_deep_sleep_start();
 }
@@ -189,14 +189,14 @@ void initalizeDevices() {
   }
 
   // Initalize BME280
-  if (! bme.begin(0x76)) {
+  if (!bme.begin(0x76)) {
     printStatus("BME280 sensor not found - check connections.");
   } else {
     Serial.println(F("BME280 initialization successful"));
   }
 
   // Initalize SGP30
-  if (! sgp.begin()){
+  if (!sgp.begin()){
     printStatus("SGP30 sensor not found - check connections.");
   } else {
     Serial.println("SGP30 initialization successful");
@@ -241,7 +241,7 @@ void transferSensorData() {
   float temparature = bme.readTemperature();
   float pressure = bme.readPressure() / 100.0F;
   float humidity = bme.readHumidity();
-  printStatus("Temperature="+String(temperature)+"°C");
+  printStatus("Temperature="+String(temparature)+"°C");
   printStatus("Pressure="+String(pressure)+"hPa");
   printStatus("Humidity="+String(humidity)+"%RH");
 
@@ -260,7 +260,7 @@ void transferSensorData() {
 
   // Read SGP30
   unsigned int tvoc = sgp.TVOC;
-  unsigned int eco2 = sgp.eC02; 
+  unsigned int eco2 = sgp.eCO2; 
   // unsigned int rawH2 = sgp.rawH2;
   // unsigned int rawEthanol = sgp.rawEthanol;
   printStatus("TVOC="+String(tvoc)+"ppb");
@@ -269,7 +269,8 @@ void transferSensorData() {
   // printStatus("rawEthanol="+String(rawEthanol));
 
   // Read KY-003
-  measureWindSpeed();
+  float windSpeed = measureWindSpeed();
+  printStatus("WindSpeed="+String(windSpeed)+"m/s");
 
   // Transfer Data
   
@@ -288,7 +289,7 @@ float measureWindSpeed() {
   rotationCount = 0; // Reset rotation count at the beginning
 
   // Attach interrupt to count rotations
-  attachInterrupt(digitalPinToInterrupt(SENSOR_PIN), countRotation, RISING);
+  attachInterrupt(digitalPinToInterrupt(hallDigital), countRotation, RISING);
 
   // Loop until measurementDuration passes
   do {
@@ -296,7 +297,7 @@ float measureWindSpeed() {
   } while (currentMillis - startMillis < measurementDuration);
 
   // Detach the interrupt to stop counting
-  detachInterrupt(digitalPinToInterrupt(SENSOR_PIN));
+  detachInterrupt(digitalPinToInterrupt(hallDigital));
 
   // Assuming each rotation is 1 meter of wind travel, adjust as per your anemometer's spec
   // windSpeed = (rotationCount * 1.0 /* meters per rotation */) / (5 /* measurement interval in seconds */);
