@@ -71,14 +71,17 @@ Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, 
 String textLines[]={"", "", "", "", "", "", "", ""};
 int curLine=0;
 
-// Declarations for Weather Sensors
-BH1750 lightMeter; // Light Sensor
-Adafruit_BME280 bme; // BME280 Temperature, Pressure, and Humidity Sensor 
-Adafruit_SGP30 sgp; // SGP30 Air Quality Sensor
-#define rainAnalog 35 // Rain Sensor Analog Pin
-#define hallDigital 34 // KY-003 Hall Sensor Digital Pin
+// Sensors/Modules
+// Sensor Object Declerations
+BH1750 lightMeter;      // BH1750 Light Level Sensor (Lightlevel[lux])
+Adafruit_BME280 bme;    // BME280 Sensor (Temperature[°C], Humidity[%RH"], Pressure[hPa])
+Adafruit_SGP30 sgp;     // SGP30 Air Quality Sensor (TVOC[ppb], CO2[ppm])
 
-// Declarations for Hall Sensor
+// Pin Definitions
+#define RAIN_ANALOG_PIN 35              // Rain Sensor Analog Pin (Rain[True/False])
+#define WIND_SPEED_DIGITAL_PIN 34       // KY-003 Hall Sensor Digital Pin (WindSpeed[km/h])
+#define WIND_DIRECTION_ANALOG_PIN 36    // Rotary Hall Angle Sensor Analog Pin (WindDirection[0-360°])
+
 volatile int rotationCount = 0; // Counts Rotations (volatile for interrupts)
 unsigned long measurementDuration = 10000; // Measurement duration in milliseconds (10 seconds)
 
@@ -195,6 +198,9 @@ void initalizeDevices() {
     Serial.println(F("BME280 initialization successful"));
   }
 
+  // Initalize Rain Sensor
+
+
   // Initalize SGP30
   if (!sgp.begin()){
     printStatus("SGP30 sensor not found - check connections.");
@@ -220,11 +226,13 @@ void initalizeDevices() {
     }
   }
 
-  // Initalize KY-003
-  pinMode(hallDigital, INPUT);
-  printStatus("KY-003 sensor initalized");
+  // Initalize KY-003 Hall
+  pinMode(WIND_SPEED_DIGITAL_PIN, INPUT);
+  printStatus("KY-003 Hall sensor initalized");
 
   // Initalize Wind Vane
+  pinMode(WIND_DIRECTION_ANALOG_PIN, OUTPUT);
+  printStatus("Rotary Hall sensor initalized");
 
 }
 
@@ -242,11 +250,10 @@ void transferSensorData() {
   float pressure = bme.readPressure() / 100.0F;
   float humidity = bme.readHumidity();
   printStatus("Temperature="+String(temparature)+"°C");
-  printStatus("Pressure="+String(pressure)+"hPa");
-  printStatus("Humidity="+String(humidity)+"%RH");
+  printStatus("Pressure="+String(pressure)+
 
   // Read FC-37
-  int rainAnalogVal = analogRead(rainAnalog);
+  int rainAnalogVal = analogRead(RAIN_ANALOG_PIN);
   if (!bIsRaining && rainAnalogVal < 2700) {
     bIsRaining = true;
   } else if (bIsRaining && rainAnalogVal > 3400) {
@@ -270,7 +277,11 @@ void transferSensorData() {
 
   // Read KY-003
   float windSpeed = measureWindSpeed();
-  printStatus("WindSpeed="+String(windSpeed)+"m/s");
+  printStatus("WindSpeed="+String(windSpeed)+"km/h");
+
+  // Read Wind Vane
+  uint16_t windDirAnalogRead = analogRead(WIND_DIRECTION_ANALOG_PIN);
+  uint16_t windDirDeg = map(windDirAnalogRead, 0, 1023, 0, 359);
 
   // Transfer Data
   
@@ -289,7 +300,7 @@ float measureWindSpeed() {
   rotationCount = 0; // Reset rotation count at the beginning
 
   // Attach interrupt to count rotations
-  attachInterrupt(digitalPinToInterrupt(hallDigital), countRotation, RISING);
+  attachInterrupt(digitalPinToInterrupt(WIND_SPEED_DIGITAL_PIN), countRotation, RISING);
 
   // Loop until measurementDuration passes
   do {
@@ -297,7 +308,7 @@ float measureWindSpeed() {
   } while (currentMillis - startMillis < measurementDuration);
 
   // Detach the interrupt to stop counting
-  detachInterrupt(digitalPinToInterrupt(hallDigital));
+  detachInterrupt(digitalPinToInterrupt(WIND_SPEED_DIGITAL_PIN));
 
   // Assuming each rotation is 1 meter of wind travel, adjust as per your anemometer's spec
   // windSpeed = (rotationCount * 1.0 /* meters per rotation */) / (5 /* measurement interval in seconds */);
@@ -448,7 +459,9 @@ float calculateWindSpeed(int rotations, unsigned long duration) {
   // Convert duration from milliseconds to seconds
   float durationInSeconds = duration / 1000.0;
   // Assuming each rotation is 1 meter of wind travel, adjust as per your anemometer's spec
-  return (rotations * 1.0) / durationInSeconds;
+  float speedMetersPerSecond = (rotations * 1.0) / durationInSeconds;
+  // Convert m/s to km/h
+  return speedMetersPerSecond * 3.6;
 }
 
 /**
@@ -459,4 +472,6 @@ float calculateWindSpeed(int rotations, unsigned long duration) {
 void countRotation() {
   rotationCount++;
 }
+
+
 
