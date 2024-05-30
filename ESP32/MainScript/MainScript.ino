@@ -5,13 +5,13 @@
 
 // Libraries
 #include <WiFi.h>
-#include "time.h"
+#include <time.h>
 #include <ESP32Time.h>
 #include <Wire.h>
 #include <BH1750.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
-#include "Adafruit_SGP30.h"
+#include <Adafruit_SGP30.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
 #include <HardwareSerial.h>
@@ -51,19 +51,19 @@ const int   daylightOffset_sec = 3600;  // Does the daylightOffset change by its
 ESP32Time rtc;
 
 // Declarations for DeepSleep
-#define uS_TO_S_FACTOR 1000000ULL // Conversion factor for micro seconds to seconds
-#define TIME_TO_SLEEP 5 * 60  // Time ESP32 will go to sleep (in seconds)
+#define uS_TO_S_FACTOR 1000000ULL   // Conversion factor for micro seconds to seconds
+#define TIME_TO_SLEEP 5 * 60        // Time ESP32 will go to sleep (in seconds)
 
 // Variables that get saved during DeepSleep
 RTC_DATA_ATTR int bootCount = 0;
-RTC_DATA_ATTR boolean requestedNTP; // If NTP Server was already requested
-RTC_DATA_ATTR boolean bIsRaining; // Last Known Rain Value for next boot
+RTC_DATA_ATTR boolean requestedNTP;     // If NTP Server was already requested
+RTC_DATA_ATTR boolean bIsRaining;       // Last Known Rain Value for next boot
 
 // Declarations for Display
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels
-#define OLED_RESET     -1 // Reset pin
-#define SCREEN_ADDRESS 0x3c // Address 0x3D for 128x64
+#define SCREEN_WIDTH 128        // OLED display width, in pixels
+#define SCREEN_HEIGHT 64        // OLED display height, in pixels
+#define OLED_RESET     -1       // Reset pin
+#define SCREEN_ADDRESS 0x3c     // Address 0x3D for 128x64
 #define WHITE 1
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -82,8 +82,8 @@ Adafruit_SGP30 sgp;     // SGP30 Air Quality Sensor (TVOC[ppb], CO2[ppm])
 #define WIND_SPEED_DIGITAL_PIN 34       // KY-003 Hall Sensor Digital Pin (WindSpeed[km/h])
 #define WIND_DIRECTION_ANALOG_PIN 36    // Rotary Hall Angle Sensor Analog Pin (WindDirection[0-360°])
 
-volatile int rotationCount = 0; // Counts Rotations (volatile for interrupts)
-unsigned long measurementDuration = 10000; // Measurement duration in milliseconds (10 seconds)
+volatile int rotationCount = 0;                // Counts Rotations (volatile for interrupts)
+unsigned long measurementDuration = 10000;     // Measurement duration in milliseconds (10 seconds)
 
 // ESP32 ID
 static const int ESP32_ID = 101;
@@ -91,9 +91,10 @@ static const int ESP32_ID = 101;
 void setup() {
   Serial.begin(115200);
 
-  initalizeDevices();
+  initalizeSH1106G();
   printLogo();
   delay(2000);
+  initalizeDevices();
 
   ++bootCount;
   printStatus("BootCount: "+String(bootCount));
@@ -121,6 +122,118 @@ void setup() {
 void loop() {
   // Not executed because of Deep Sleep
 }
+
+// Initalization Functions
+
+// Initalizes and setups all Devices
+void initalizeDevices() {
+  // Start i2c bus
+  Wire.begin();
+
+  // Initalize Devices
+//  initalizeSH1106G();
+  initalizeBH1750();
+  initalizeBME280();
+  initalizeRain();
+  initalizeSGP30();
+  initalizeHall();
+  initalizeRotaryHall();
+}
+
+bool initalizeSH1106G() {
+  if (display.begin(SCREEN_ADDRESS, true)) { 
+    Serial.println(F("SH1106G allocation successfull"));
+    return true;
+  } else {
+    Serial.println(F("SH1106G allocation failed - check wiring"));
+    return false;
+  }
+}
+
+bool initalizeBH1750() {
+  lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE, 0x23);
+  float lux = lightMeter.readLightLevel();
+  if (lux != 0.0) { // Zero lux reading
+    printStatus(F("BH1750 initialization successful"));
+    return true;
+  } else {
+    printStatus("BH1750 zero lux detected - check wiring.");
+    return false;
+  }
+}
+
+bool initalizeBME280() {
+  if (bme.begin(0x76)) {
+    printStatus(F("BME280 initialization successful"));
+    return true;
+  } else {
+    printStatus("BME280 sensor not found - check wiring.");
+    return false;
+  }
+}
+
+bool initalizeRain() {
+  pinMode(RAIN_ANALOG_PIN, INPUT);
+  int rainValue = analogRead(RAIN_ANALOG_PIN);
+    if (rainValue > 0 && rainValue < 4095) {
+        printStatus("Rain sensor is connected.");
+        return true;
+    } else {
+        printStatus("Check rain sensor wiring.");
+    }
+}
+
+bool initalizeSGP30() {
+  if (!sgp.begin()){
+    printStatus("SGP30 sensor not found - check wiring.");
+  } else {
+    printStatus("SGP30 initialization successful");
+    Serial.print("Found SGP30 serial #");
+    Serial.print(sgp.serialnumber[0], HEX);
+    Serial.print(sgp.serialnumber[1], HEX);
+    Serial.println(sgp.serialnumber[2], HEX);
+
+    // Humidity compensation
+    sgp.setHumidity(getAbsoluteHumidity(bme.readTemperature(), bme.readHumidity()));
+
+    // Update Baseline values
+    if (bootCount % 30 == 0) {
+      uint16_t TVOC_base, eCO2_base;
+      if (sgp.getIAQBaseline(&eCO2_base, &TVOC_base)) {
+        printStatus("Baseline eCO2: 0x" + String(eCO2_base, HEX));
+        printStatus("Baseline TVOC: 0x" + String(TVOC_base, HEX));
+      } else {
+        printStatus("Failed to get baseline readings");
+      }
+    }
+  }
+}
+
+bool initalizeHall() {
+  pinMode(WIND_SPEED_DIGITAL_PIN, INPUT);
+  if (true) {   // Add check
+    printStatus("KY-003 Hall sensor initalized");
+    return true;
+  } else {
+    printStatus("KY-003 Hall sensor not found - check wiring.");
+    return false;
+  }
+}
+
+bool initalizeRotaryHall() {
+  pinMode(WIND_DIRECTION_ANALOG_PIN, OUTPUT);
+  if (true) {   // Add check
+    printStatus("Rotary Hall sensor initalized");
+    return true;
+  } else {
+    printStatus("Rotary Hall sensor not found - check wiring.");
+    return false;
+  }
+}
+
+// Network Functions
+
+// Wifi
 
 // Connect to Wi-Fi network
 void connectToWiFi() {
@@ -161,80 +274,12 @@ void requestNTP() {
   printStatus("Write successfull");
 }
 
-// Starts DeepSleep and sets wakeup event
-void startDeepSleep() {
-  printStatus("Set DeepSleep WakeUp..");
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+// MQTT
 
-  printStatus("Starting DeepSleep..");
-  Serial.flush(); // Waits for the transmisson of outgoing serial data to complete
-  esp_deep_sleep_start();
-}
+// MQTT Publish
+// rtc.getTime("%A, %B %d %Y %H:%M:%S")
 
-// Initalizes and setups all Devices
-void initalizeDevices() {
-  Wire.begin();
-
-  // Initalize Display
-  if (!display.begin(SCREEN_ADDRESS, true)) { 
-    Serial.println(F("SH110X allocation failed"));
-  } else {
-    Serial.println(F("SH110X allocation successfull"));
-  }
-
-  // Initalize BH1750
-  lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE, 0x23);
-  float lux = lightMeter.readLightLevel();  // Try reading a value
-  if (lux == 0.0) { // Zero lux reading
-    printStatus("BH1750 zero lux detected - check wiring.");
-  } else {
-    Serial.println(F("BH1750 initialization successful"));
-  }
-
-  // Initalize BME280
-  if (!bme.begin(0x76)) {
-    printStatus("BME280 sensor not found - check connections.");
-  } else {
-    Serial.println(F("BME280 initialization successful"));
-  }
-
-  // Initalize Rain Sensor
-
-
-  // Initalize SGP30
-  if (!sgp.begin()){
-    printStatus("SGP30 sensor not found - check connections.");
-  } else {
-    Serial.println("SGP30 initialization successful");
-    Serial.print("Found SGP30 serial #");
-    Serial.print(sgp.serialnumber[0], HEX);
-    Serial.print(sgp.serialnumber[1], HEX);
-    Serial.println(sgp.serialnumber[2], HEX);
-
-    // Humidity compensation
-    sgp.setHumidity(getAbsoluteHumidity(bme.readTemperature(), bme.readHumidity()));
-
-    // Update Baseline values
-    if (bootCount % 30 == 0) {
-      uint16_t TVOC_base, eCO2_base;
-      if (sgp.getIAQBaseline(&eCO2_base, &TVOC_base)) {
-        printStatus("Baseline eCO2: 0x" + String(eCO2_base, HEX));
-        printStatus("Baseline TVOC: 0x" + String(TVOC_base, HEX));
-      } else {
-        printStatus("Failed to get baseline readings");
-      }
-    }
-  }
-
-  // Initalize KY-003 Hall
-  pinMode(WIND_SPEED_DIGITAL_PIN, INPUT);
-  printStatus("KY-003 Hall sensor initalized");
-
-  // Initalize Wind Vane
-  pinMode(WIND_DIRECTION_ANALOG_PIN, OUTPUT);
-  printStatus("Rotary Hall sensor initalized");
-
-}
+// Measurement Functions
 
 // Reads and sends the Data from the Sensors to MQTT Server
 void transferSensorData() {
@@ -250,7 +295,8 @@ void transferSensorData() {
   float pressure = bme.readPressure() / 100.0F;
   float humidity = bme.readHumidity();
   printStatus("Temperature="+String(temparature)+"°C");
-  printStatus("Pressure="+String(pressure)+
+  printStatus("Pressure="+String(pressure)+"hPa");
+  printStatus("Humidity="+String(humidity)+"%RH");
 
   // Read FC-37
   int rainAnalogVal = analogRead(RAIN_ANALOG_PIN);
@@ -315,8 +361,19 @@ float measureWindSpeed() {
   return calculateWindSpeed(rotationCount, measurementDuration);
 } 
 
-// MQTT Publish
-// rtc.getTime("%A, %B %d %Y %H:%M:%S")
+// DeepSleep Functions
+
+// Starts DeepSleep and sets wakeup event
+void startDeepSleep() {
+  printStatus("Set DeepSleep WakeUp..");
+  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+
+  printStatus("Starting DeepSleep..");
+  Serial.flush(); // Waits for the transmisson of outgoing serial data to complete
+  esp_deep_sleep_start();
+}
+
+// Display Functions
 
 // Prints the Status on the Serial Monitor and OLED
 void printStatus(String statusText) {
@@ -435,6 +492,8 @@ void printLogo() {
 
 }
 
+// Calculation Functions
+
 /**
  * return absolute humidity [mg/m^3] with approximation formula
  * @param temperature [°C]
@@ -463,6 +522,8 @@ float calculateWindSpeed(int rotations, unsigned long duration) {
   // Convert m/s to km/h
   return speedMetersPerSecond * 3.6;
 }
+
+// Interrupt Functions
 
 /**
  * Interrupt service routine for counting rotations.
