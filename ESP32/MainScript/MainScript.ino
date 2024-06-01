@@ -467,9 +467,93 @@ float measureWindSpeed() {
   return calculateWindSpeed(rotationCount, measurementDuration);
 } 
 
+// GPS Functions
+
+bool toggleGPS(bool status) {
+  // Determine the action being taken based on the status
+  String action = status ? "on" : "off";
+
+  if (!modem.enableGPS(status)) {
+    printStatus(F("GPS failed to toggle ") + action);
+    return false;
+  } else {
+    printStatus(F("GPS toggled ") + action);
+    return true;
+  }
+}
+
+int8_t getGPSStatus() {
+  int8_t stat;
+
+  // Check GPS fix
+  stat = modem.GPSstatus();
+  if (stat < 0) {
+    Serial.println(F("Failed to query"));
+  } else if (stat == 0) {
+    Serial.println(F("GPS off"));
+  } else if (stat == 1) {
+    Serial.println(F("No fix"));
+  } else if (stat == 2) {
+    Serial.println(F("2D fix"));
+  } else if (stat == 3) {
+    Serial.println(F("3D fix"));
+  }
+  return stat;
+}
+
+void getGPSData() {
+    float latitude, longitude, speed_kph, heading, altitude;
+    
+    // For UTC time parsing.
+    /* 
+    float second;
+    uint16_t year;
+    uint8_t month, day, hour, minute;
+    */
+
+    // For UTC time data
+    // if (modem.getGPS(&latitude, &longitude, &speed_kph, &heading, &altitude, &year, &month, &day, &hour, &minute, &second)) {
+    if (modem.getGPS(&latitude, &longitude, &speed_kph, &heading, &altitude)) { // Use this line if UTC time is not needed
+        Serial.println(F("---------------------"));
+        Serial.print(F("Latitude: ")); Serial.println(latitude, 6);
+        Serial.print(F("Longitude: ")); Serial.println(longitude, 6);
+        Serial.print(F("Speed: ")); Serial.println(speed_kph);
+        Serial.print(F("Heading: ")); Serial.println(heading);
+        Serial.print(F("Altitude: ")); Serial.println(altitude);
+        
+        // For UTC time parsing.
+        /*
+        Serial.println(F("---------------------"));
+        Serial.print(F("Year: ")); Serial.println(year);
+        Serial.print(F("Month: ")); Serial.println(month);
+        Serial.print(F("Day: ")); Serial.println(day);
+        Serial.print(F("Hour: ")); Serial.println(hour);
+        Serial.print(F("Minute: ")); Serial.println(minute);
+        Serial.print(F("Second: ")); Serial.println(second);
+        Serial.println(F("---------------------"));
+        */
+    }
+}
+
 // Time Functions
 
+void enableRTC() {
+  // enable network time sync
+  if (!modem.enableRTC(true)) {
+    printStatus(F("RTC enable failed"));
+  } else {
+    printStatus(F("RTC enabled"));
+  }
+}
 
+void enableNTP() {
+  // enable NTP time sync
+  if (!modem.enableNTPTimeSync(true, F("pool.ntp.org")))
+    printStatus(F("NTP enable failed"));
+  } else {
+    printStatus(F("NTP enabled"));
+  }
+}
 
 // DeepSleep Functions
 
