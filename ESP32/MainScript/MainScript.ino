@@ -4,7 +4,7 @@
  */
 
 // Libraries
-#include <WiFi.h>
+//#include <WiFi.h>
 #include <time.h>
 #include <ESP32Time.h>
 #include <Wire.h>
@@ -15,18 +15,21 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SH110X.h>
 #include <HardwareSerial.h>
+#include <BotleticsSIM7000.h>
 
-// GPRS credentials
-// const char apn[] = "YourAPN";
-// const char gprsUser[] = "YourGPRSUsername";
-// const char gprsPass[] = "YourGPRSPassword";
+// LTE modem details
+#define SIMCOM_7000
+#define BOTLETICS_PWRKEY 18
+#define RST 5
+#define TX 16 // ESP32 hardware serial RX2 (GPIO16)
+#define RX 17 // ESP32 hardware serial TX2 (GPIO17)
 
 // MQTT Broker details
-// const char* broker = "mqtt.broker.net";
-// const int port = 8883;
-// const char* client_id = "YourClientID"; 
-// const char* mqtt_username = "YourMQTTUsername";
-// const char* mqtt_password = "YourMQTTPassword";
+#define MQTT_SERVER      "mqtt.broker.net"
+#define MQTT_PORT        1883
+#define MQTT_USERNAME    "YourMQTTUsername"
+#define MQTT_PASSWORD    "YourMQTTPassword"
+#define MQTT_CLIENTID    "YourClientID"
 
 // Other Settings
 // const bool retain_messages = false;
@@ -35,17 +38,22 @@
 // MQTT Topics
 // const char* topicSensors = "sensors/data";
 
+// For ESP32 hardware serial
+HardwareSerial modemSS(1);
+
+Botletics_modem_LTE modem = Botletics_modem_LTE();
+
 // Wifi login data
-const char* wifi_ssid = "REPLACE_WITH_WIFI_SSID";
-const char* wifi_password = "REPLACE_WITH_WIFI_PASSWORD";
+//const char* wifi_ssid = "REPLACE_WITH_WIFI_SSID";
+//const char* wifi_password = "REPLACE_WITH_WIFI_PASSWORD";
 
 // Declarations for WiFi
-WiFiClient client;
+//WiFiClient client;
 
 // Declarations for NTP
-const char* ntpServer = "pool.ntp.org";
-const long  gmtOffset_sec = 3600;
-const int   daylightOffset_sec = 3600;  // Does the daylightOffset change by itself?
+//const char* ntpServer = "pool.ntp.org";
+//const long  gmtOffset_sec = 3600;
+//const int   daylightOffset_sec = 3600;  // Does the daylightOffset change by itself?
 
 // Declarations for ESP32 RTC
 ESP32Time rtc;
@@ -91,10 +99,11 @@ static const int ESP32_ID = 101;
 void setup() {
   Serial.begin(115200);
 
-  initalizeSH1106G();
+  initializeSH1106G();
   printLogo();
   delay(2000);
-  initalizeDevices();
+  initializeLTEModem();
+  initializeDevices();
 
   ++bootCount;
   printStatus("BootCount: "+String(bootCount));
@@ -123,24 +132,24 @@ void loop() {
   // Not executed because of Deep Sleep
 }
 
-// Initalization Functions
+// Initialization Functions
 
-// Initalizes and setups all Devices
-void initalizeDevices() {
+// Initialize and setups all Devices
+void initializeDevices() {
   // Start i2c bus
   Wire.begin();
 
-  // Initalize Devices
-//  initalizeSH1106G();
-  initalizeBH1750();
-  initalizeBME280();
-  initalizeRain();
-  initalizeSGP30();
-  initalizeHall();
-  initalizeRotaryHall();
+  // Initialize Devices
+//  initializeSH1106G();
+  initializeBH1750();
+  initializeBME280();
+  initializeRain();
+  initializeSGP30();
+  initializeHall();
+  initializeRotaryHall();
 }
 
-bool initalizeSH1106G() {
+bool initializeSH1106G() {
   if (display.begin(SCREEN_ADDRESS, true)) { 
     Serial.println(F("SH1106G allocation successfull"));
     return true;
@@ -150,11 +159,65 @@ bool initalizeSH1106G() {
   }
 }
 
-bool initalizeBH1750() {
+bool initializeLTEModem() {
+  pinMode(RST, OUTPUT);
+  digitalWrite(RST, HIGH); // Default state
+
+  // Turn on the module by pulsing PWRKEY low for a little bit
+  // This amount of time depends on the specific module that's used
+  modem.powerOn(BOTLETICS_PWRKEY); // Power on the module
+
+  printStatus("Initializing LTE modem...(May take several seconds)");
+
+  // SIM7000 takes about 3s to turn on and SIM7500 takes about 15s
+  // Press reset button if the module is still turning on and the board doesn't find it.
+  // When the module is on it should communicate right after pressing reset
+
+  // Start at default SIM7000 shield baud rate
+  modemSS.begin(115200, SERIAL_8N1, TX, RX); // baud rate, protocol, ESP32 RX pin, ESP32 TX pin
+
+  //printStatus(F("Configuring to 9600 baud"));
+  //modemSS.println("AT+IPR=9600"); // Set baud rate
+  //delay(100); // Short pause to let the command run
+  //modemSS.begin(9600, SERIAL_8N1, TX, RX); // Switch to 9600
+
+  // Check if modem is available
+  if (! modem.begin(modemSS)) {
+    printStatus(F("LTE modem not found - check wiring"));
+  } else {
+    printStatus(F("LTE modem initialized"));
+  }
+
+  // Check type
+  type = modem.type();
+  printStatus(F("Modem is OK"));
+  printStatus(F("Found "));
+  switch (type) {
+    case SIM7000:
+      printStatus(F("SIM7000")); 
+      break;
+    default:
+      printStatus(F("Unknown")); 
+      break;
+  }
+
+  // Print module IMEI number.
+  uint8_t imeiLen = modem.getIMEI(imei);
+  if (imeiLen > 0) {
+    printStatus("Module IMEI: "); Serial.println(imei);
+  }
+
+  // Set modem to full functionality
+  modem.setFunctionality(1); // AT+CFUN=1
+
+  modem.setNetworkSettings(F("webLGaut")); // For HoT IoT Simcard
+}
+
+bool initializeBH1750() {
   lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE, 0x23);
   float lux = lightMeter.readLightLevel();
   if (lux != 0.0) { // Zero lux reading
-    printStatus(F("BH1750 initialization successful"));
+    printStatus(F("BH1750 sensor initialized"));
     return true;
   } else {
     printStatus("BH1750 zero lux detected - check wiring.");
@@ -162,9 +225,9 @@ bool initalizeBH1750() {
   }
 }
 
-bool initalizeBME280() {
+bool initializeBME280() {
   if (bme.begin(0x76)) {
-    printStatus(F("BME280 initialization successful"));
+    printStatus(F("BME280 sensor initialization successful"));
     return true;
   } else {
     printStatus("BME280 sensor not found - check wiring.");
@@ -172,22 +235,22 @@ bool initalizeBME280() {
   }
 }
 
-bool initalizeRain() {
+bool initializeRain() {
   pinMode(RAIN_ANALOG_PIN, INPUT);
   int rainValue = analogRead(RAIN_ANALOG_PIN);
     if (rainValue > 0 && rainValue < 4095) {
-        printStatus("Rain sensor is connected.");
+        printStatus("Rain sensor initialized");
         return true;
     } else {
-        printStatus("Check rain sensor wiring.");
+        printStatus("Rain sensor not found - check wiring");
     }
 }
 
-bool initalizeSGP30() {
+bool initializeSGP30() {
   if (!sgp.begin()){
-    printStatus("SGP30 sensor not found - check wiring.");
+    printStatus("SGP30 sensor not found - check wiring");
   } else {
-    printStatus("SGP30 initialization successful");
+    printStatus("SGP30 sensor initialized");
     Serial.print("Found SGP30 serial #");
     Serial.print(sgp.serialnumber[0], HEX);
     Serial.print(sgp.serialnumber[1], HEX);
@@ -209,24 +272,26 @@ bool initalizeSGP30() {
   }
 }
 
-bool initalizeHall() {
+bool initializeHall() {
   pinMode(WIND_SPEED_DIGITAL_PIN, INPUT);
   if (true) {   // Add check
-    printStatus("KY-003 Hall sensor initalized");
+    printStatus("KY-003 Hall sensor initialized");
     return true;
   } else {
-    printStatus("KY-003 Hall sensor not found - check wiring.");
+    printStatus("KY-003 Hall sensor not found - check wiring");
     return false;
   }
 }
 
-bool initalizeRotaryHall() {
-  pinMode(WIND_DIRECTION_ANALOG_PIN, OUTPUT);
+bool initializeRotaryHall() {
+//  pinMode(WIND_DIRECTION_ANALOG_PIN, OUTPUT);
+  pinMode(WIND_DIRECTION_ANALOG_PIN, INPUT);
+  int sensorValue = analogRead(WIND_DIRECTION_ANALOG_PIN);
   if (true) {   // Add check
-    printStatus("Rotary Hall sensor initalized");
+    printStatus("Rotary Hall sensor initialized");
     return true;
   } else {
-    printStatus("Rotary Hall sensor not found - check wiring.");
+    printStatus("Rotary Hall sensor not found - check wiring");
     return false;
   }
 }
@@ -235,6 +300,7 @@ bool initalizeRotaryHall() {
 
 // Wifi
 
+/*
 // Connect to Wi-Fi network
 void connectToWiFi() {
   WiFi.begin(wifi_ssid, wifi_password);
@@ -273,6 +339,7 @@ void requestNTP() {
   }
   printStatus("Write successfull");
 }
+*/
 
 // MQTT
 
@@ -299,17 +366,7 @@ void transferSensorData() {
   printStatus("Humidity="+String(humidity)+"%RH");
 
   // Read FC-37
-  int rainAnalogVal = analogRead(RAIN_ANALOG_PIN);
-  if (!bIsRaining && rainAnalogVal < 2700) {
-    bIsRaining = true;
-  } else if (bIsRaining && rainAnalogVal > 3400) {
-    bIsRaining = false;
-  }
-  if (bIsRaining) {
-    printStatus("Raining=YES");
-  } else {
-    printStatus("Raining=NO");
-  }
+  measureRain();
 
   // Read SGP30
   unsigned int tvoc = sgp.TVOC;
@@ -332,6 +389,28 @@ void transferSensorData() {
   // Transfer Data
   
 
+}
+
+// Data Functions
+
+/**
+ * Checks the rain sensor's analog value to determine if it is raining.
+ * Updates the `bIsRaining` status based on threshold values:
+ * - Sets `bIsRaining` to true if the reading is below 2700.
+ * - Sets `bIsRaining` to false if the reading is above 3400.
+ */
+void measureRain() {
+  int rainAnalogVal = analogRead(RAIN_ANALOG_PIN);
+  if (!bIsRaining && rainAnalogVal < 2700) {
+    bIsRaining = true;
+  } else if (bIsRaining && rainAnalogVal > 3400) {
+    bIsRaining = false;
+  }
+  if (bIsRaining) {
+    printStatus("Raining=YES");
+  } else {
+    printStatus("Raining=NO");
+  }
 }
 
 /**
