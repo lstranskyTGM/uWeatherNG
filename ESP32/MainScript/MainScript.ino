@@ -343,11 +343,6 @@ void requestNTP() {
 
 // MQTT
 
-// MQTT Publish
-// rtc.getTime("%A, %B %d %Y %H:%M:%S")
-
-// Measurement Functions
-
 // Reads and sends the Data from the Sensors to MQTT Server
 void transferSensorData() {
 
@@ -387,8 +382,40 @@ void transferSensorData() {
   uint16_t windDirDeg = map(windDirAnalogRead, 0, 1023, 0, 359);
 
   // Transfer Data
-  
+  mqttPublish();  // Add data
 
+}
+
+// MQTT Publish
+// rtc.getTime("%A, %B %d %Y %H:%M:%S")
+void mqttPublish() {
+  // Open Connection
+  modem.openWirelessConnection(true);
+
+  // Set up MQTT parameters (see MQTT app note for explanation of parameter values)
+  modem.MQTT_setParameter("URL", MQTT_SERVER, MQTT_PORT);
+  // Set up MQTT username and password if necessary
+  modem.MQTT_setParameter("USERNAME", MQTT_USERNAME);
+  modem.MQTT_setParameter("PASSWORD", MQTT_PASSWORD);
+  modem.MQTT_setParameter("CLIENTID", MQTT_CLIENTID);
+
+  printStatus(F("Connecting to MQTT broker..."));
+  if (! modem.MQTT_connect(true)) {
+    printStatus(F("MQTT broker connect failed"));
+  } else { 
+    printStatus(F("MQTT broker connected"));
+  }
+
+  // Publish MQTT Data
+  if (!modem.MQTT_publish("voltage2", battBuff, strlen(battBuff), 1, 0)) {
+    printStatus(F("Publish failed")); 
+  } else {
+    printStatus(F("Publish successful")); 
+  }
+
+  // Close Connection
+  modem.MQTT_connect(false);
+  modem.openWirelessConnection(false);
 }
 
 // Data Functions
@@ -439,6 +466,10 @@ float measureWindSpeed() {
   // windSpeed = (rotationCount * 1.0 /* meters per rotation */) / (5 /* measurement interval in seconds */);
   return calculateWindSpeed(rotationCount, measurementDuration);
 } 
+
+// Time Functions
+
+
 
 // DeepSleep Functions
 
