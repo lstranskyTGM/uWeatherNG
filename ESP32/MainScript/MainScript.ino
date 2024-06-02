@@ -78,7 +78,7 @@ RTC_DATA_ATTR boolean bIsRaining = false;       // Last Known Rain Value for nex
 #define SCREEN_WIDTH 128        // OLED display width, in pixels
 #define SCREEN_HEIGHT 64        // OLED display height, in pixels
 #define OLED_RESET     -1       // Reset pin
-#define SCREEN_ADDRESS 0x3c     // Address 0x3D for 128x64
+//#define SCREEN_ADDRESS 0x3c     // Address 0x3D for 128x64
 #define WHITE 1
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
@@ -97,6 +97,7 @@ Adafruit_SGP30 sgp;     // SGP30 Air Quality Sensor (TVOC[ppb], CO2[ppm])
 #define WIND_SPEED_DIGITAL_PIN 34       // KY-003 Hall Sensor Digital Pin (WindSpeed[km/h])
 #define WIND_DIRECTION_ANALOG_PIN 36    // Rotary Hall Angle Sensor Analog Pin (WindDirection[0-360°])
 
+// Other variables
 volatile int rotationCount = 0;                // Counts Rotations (volatile for interrupts)
 unsigned long measurementDuration = 10000;     // Measurement duration in milliseconds (10 seconds)
 
@@ -135,7 +136,7 @@ void setup() {
   initializeDevices();
 
   ++bootCount;
-  printStatus("BootCount: "+String(bootCount));
+  printStatus("BootCount: " + String(bootCount));
 
   // connect_to_WiFi();
 
@@ -155,6 +156,7 @@ void setup() {
   // WiFi.disconnect();
   // print_Status("Disconnected from WiFi");
 
+  configureDeepSleep(TIME_TO_SLEEP * uS_TO_S_FACTOR);
   startDeepSleep();
 }
 
@@ -181,7 +183,7 @@ void initializeDevices() {
 }
 
 bool initializeSH1106G() {
-  if (display.begin(SCREEN_ADDRESS, true)) { 
+  if (display.begin(0x3c, true)) { 
     Serial.println(F("SH1106G allocation successfull"));
     return true;
   } else {
@@ -191,7 +193,7 @@ bool initializeSH1106G() {
 }
 
 bool initializeLTEModem() {
-  printStatus("Initializing LTE modem...(May take several seconds)");
+  printStatus(F("Initializing LTE modem...(May take several seconds)"));
 
   // SIM7000 takes about 3s to turn on and SIM7500 takes about 15s
   // Press reset button if the module is still turning on and the board doesn't find it.
@@ -229,7 +231,9 @@ bool initializeLTEModem() {
   char imei[16] = {0}; // MUST use a 16 character buffer for IMEI!
   uint8_t imeiLen = modem.getIMEI(imei);
   if (imeiLen > 0) {
-    printStatus("Module IMEI: "); Serial.println(imei);
+    printStatus("Module IMEI: " + String(imei));
+  } else {
+    printStatus(F("Failed to retrive IMEI"));
   }
 
   // Set modem to full functionality
@@ -245,7 +249,7 @@ bool initializeBH1750() {
     printStatus(F("BH1750 sensor initialized"));
     return true;
   } else {
-    printStatus("BH1750 zero lux detected - check wiring.");
+    printStatus(F("BH1750 zero lux detected - check wiring."));
     return false;
   }
 }
@@ -255,7 +259,7 @@ bool initializeBME280() {
     printStatus(F("BME280 sensor initialization successful"));
     return true;
   } else {
-    printStatus("BME280 sensor not found - check wiring.");
+    printStatus(F("BME280 sensor not found - check wiring."));
     return false;
   }
 }
@@ -264,19 +268,19 @@ bool initializeRain() {
   pinMode(RAIN_ANALOG_PIN, INPUT);
   int rainValue = analogRead(RAIN_ANALOG_PIN);
     if (rainValue > 0 && rainValue < 4095) {
-        printStatus("Rain sensor initialized");
+        printStatus(F("Rain sensor initialized"));
         return true;
     } else {
-        printStatus("Rain sensor not found - check wiring");
+        printStatus(F("Rain sensor not found - check wiring"));
     }
 }
 
 bool initializeSGP30() {
   if (!sgp.begin()){
-    printStatus("SGP30 sensor not found - check wiring");
+    printStatus(F("SGP30 sensor not found - check wiring"));
   } else {
-    printStatus("SGP30 sensor initialized");
-    Serial.print("Found SGP30 serial #");
+    printStatus(F("SGP30 sensor initialized"));
+    Serial.print(F("Found SGP30 serial #"));
     Serial.print(sgp.serialnumber[0], HEX);
     Serial.print(sgp.serialnumber[1], HEX);
     Serial.println(sgp.serialnumber[2], HEX);
@@ -291,7 +295,7 @@ bool initializeSGP30() {
         printStatus("Baseline eCO2: 0x" + String(eCO2_base, HEX));
         printStatus("Baseline TVOC: 0x" + String(TVOC_base, HEX));
       } else {
-        printStatus("Failed to get baseline readings");
+        printStatus(F("Failed to get baseline readings"));
       }
     }
   }
@@ -300,10 +304,10 @@ bool initializeSGP30() {
 bool initializeHall() {
   pinMode(WIND_SPEED_DIGITAL_PIN, INPUT);
   if (true) {   // Add check
-    printStatus("KY-003 Hall sensor initialized");
+    printStatus(F("KY-003 Hall sensor initialized"));
     return true;
   } else {
-    printStatus("KY-003 Hall sensor not found - check wiring");
+    printStatus(F("KY-003 Hall sensor not found - check wiring"));
     return false;
   }
 }
@@ -313,10 +317,10 @@ bool initializeRotaryHall() {
   pinMode(WIND_DIRECTION_ANALOG_PIN, INPUT);
   int sensorValue = analogRead(WIND_DIRECTION_ANALOG_PIN);
   if (true) {   // Add check
-    printStatus("Rotary Hall sensor initialized");
+    printStatus(F("Rotary Hall sensor initialized"));
     return true;
   } else {
-    printStatus("Rotary Hall sensor not found - check wiring");
+    printStatus(F("Rotary Hall sensor not found - check wiring"));
     return false;
   }
 }
@@ -328,7 +332,7 @@ SensorData readSensors() {
   // Create struct
   SensorData data;
 
-  printStatus("Reading sensor data..");
+  printStatus(F("Reading sensor data.."));
 
   // Read lightlevel (BH1750)
   data.lightLevel = lightMeter.readLightLevel();
@@ -345,7 +349,7 @@ SensorData readSensors() {
   // Read rain status (FC-37)
   data.rain = measureRain();
   bIsRaining = data.rain;   // Set value for next boot
-  printStatus(data.rain ? "Raining=TRUE" : "Raining=NO");
+  printStatus(data.rain ? F("Raining=TRUE") : F("Raining=NO"));
 
   // Read air quality (SGP30)
   data.tvoc = sgp.TVOC;
@@ -527,10 +531,10 @@ bool toggleGPS(bool status) {
   String action = status ? "on" : "off";
 
   if (!modem.enableGPS(status)) {
-    printStatus(String(F("GPS failed to toggle ")) + action);
+    printStatus(String("GPS failed to toggle ") + action);
     return false;
   } else {
-    printStatus(String(F("GPS toggled ")) + action);
+    printStatus(String("GPS toggled ") + action);
     return true;
   }
 }
@@ -612,11 +616,13 @@ void enableNTP() {
 // Calculate the remaining time for deep sleep using (interval - millis())
 
 // Starts DeepSleep and sets wakeup event
-void startDeepSleep() {
-  printStatus("Set DeepSleep WakeUp..");
-  esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
+void configureDeepSleep(int sleepTime) {
+  printStatus(F("Set DeepSleep WakeUp.."));
+  esp_sleep_enable_timer_wakeup(sleepTime);
+}
 
-  printStatus("Starting DeepSleep..");
+void startDeepSleep() {
+  printStatus(F("Starting DeepSleep.."));
   Serial.flush(); // Waits for the transmisson of outgoing serial data to complete
   esp_deep_sleep_start();
 }
@@ -766,7 +772,8 @@ float calculateWindSpeed(int rotations, unsigned long duration) {
   // Convert duration from milliseconds to seconds
   float durationInSeconds = duration / 1000.0;
   // Assuming each rotation is 1 meter of wind travel, adjust as per your anemometer's spec
-  float speedMetersPerSecond = (rotations * 1.0) / durationInSeconds;
+  float distancePerRotation = 1.0;
+  float speedMetersPerSecond = (rotations * distancePerRotation) / durationInSeconds;
   // Convert m/s to km/h
   return speedMetersPerSecond * 3.6;
 }
