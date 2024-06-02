@@ -4,7 +4,6 @@
  */
 
 // Libraries
-//#include <WiFi.h>
 #include <time.h>
 #include <ESP32Time.h>
 #include <Wire.h>
@@ -50,20 +49,8 @@ const int qos_level = 2;
 HardwareSerial modemSS(1);
 Botletics_modem_LTE modem = Botletics_modem_LTE();
 
-// Wifi login data
-//const char* wifi_ssid = "REPLACE_WITH_WIFI_SSID";
-//const char* wifi_password = "REPLACE_WITH_WIFI_PASSWORD";
-
-// Declarations for WiFi
-//WiFiClient client;
-
-// Declarations for NTP
-//const char* ntpServer = "pool.ntp.org";
-//const long  gmtOffset_sec = 3600;
-//const int   daylightOffset_sec = 3600;  // Does the daylightOffset change by itself?
-
 // Declarations for ESP32 RTC
-ESP32Time rtc;
+//ESP32Time rtc;
 
 // Declarations for DeepSleep
 #define uS_TO_S_FACTOR 1000000ULL   // Conversion factor for micro seconds to seconds
@@ -138,23 +125,8 @@ void setup() {
   ++bootCount;
   printStatus("BootCount: " + String(bootCount));
 
-  // connect_to_WiFi();
-
-  // get_network_info();
-
-  //if (requestedNTP == false) {
-  //  requestNTP();
-  //  requestedNTP = true;
-  //}
-
-  // connect_to_MySQL();
-
   SensorData data = readSensors();
   mqttPublish(data);
-
-  // Disconnect from WiFi
-  // WiFi.disconnect();
-  // print_Status("Disconnected from WiFi");
 
   configureDeepSleep(TIME_TO_SLEEP * uS_TO_S_FACTOR);
   startDeepSleep();
@@ -425,51 +397,6 @@ float measureWindSpeed() {
 } 
 
 // Network Functions
-
-// Wifi
-
-/*
-// Connect to Wi-Fi network
-void connectToWiFi() {
-  WiFi.begin(wifi_ssid, wifi_password);
-  // Stuck in loop (needs to be fixed)
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    printStatus("Connecting to WiFi...");
-  }
-  printStatus("Connected to WiFi");
-}
-
-// Gets all the network info
-void getNetworkInfo(){
-    if(WiFi.status() == WL_CONNECTED) {
-        printStatus("SSID="+String(wifi_ssid));
-        printStatus("IP="+String(WiFi.localIP()));
-        printStatus("SubnetMask="+String(WiFi.subnetMask()));
-        printStatus("Gateway="+String(WiFi.gatewayIP()));
-        printStatus("RSSI="+String(WiFi.RSSI())+" dB");
-//        printStatus("Encryption="+String(WiFi.encryptionType()));
-    }
-}
-
-// Connects to an NTP and sets the time of the integrated RTC Module
-void requestNTP() {
-  printStatus("Requesting NTP Server...");
-  // Init and get the time
-  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
-  printStatus("Request successfull");
-
-  printStatus("Writing Time to RTC..");
-  // Set rtc time using NTP
-  struct tm timeinfo;
-  if (getLocalTime(&timeinfo)){
-      rtc.setTimeStruct(timeinfo); 
-  }
-  printStatus("Write successfull");
-}
-*/
-
-// MQTT
 
 // MQTT Publish
 // rtc.getTime("%A, %B %d %Y %H:%M:%S")
