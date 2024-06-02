@@ -100,6 +100,28 @@ Adafruit_SGP30 sgp;     // SGP30 Air Quality Sensor (TVOC[ppb], CO2[ppm])
 volatile int rotationCount = 0;                // Counts Rotations (volatile for interrupts)
 unsigned long measurementDuration = 10000;     // Measurement duration in milliseconds (10 seconds)
 
+// Defining Sensor Data Struct
+struct SensorData {
+    // Location Data
+    float latitude;        // Latitude coordinate of the sensor's location
+    float longitude;       // Longitude coordinate of the sensor's location
+
+    // Weather Data
+    float temperature;     // Ambient temperature measured in degrees Celsius
+    float pressure;        // Atmospheric pressure measured in hectoPascals (hPa)
+    float humidity;        // Relative humidity measured in percent (%)
+    bool rain;             // Presence of rain: true if raining, false otherwise
+
+    // Environmental Data
+    float lightLevel;      // Ambient light level measured in lux
+    float windSpeed;       // Wind speed measured in kilometers per hour (km/h)
+    int windDirection;     // Wind direction measured in degrees from true north
+
+    // Air Quality Data
+    unsigned int tvoc;     // Total Volatile Organic Compounds measured in parts per billion (ppb)
+    unsigned int eco2;     // Equivalent CO2 measured in parts per million (ppm)
+};
+
 // ESP32 ID
 static const int ESP32_ID = 101;
 
@@ -191,7 +213,7 @@ bool initializeLTEModem() {
   }
 
   // Check type
-  type = modem.type();
+  uint8_t type = modem.type();
   printStatus(F("Modem is OK"));
   printStatus(F("Found "));
   switch (type) {
@@ -204,6 +226,7 @@ bool initializeLTEModem() {
   }
 
   // Print module IMEI number.
+  char imei[16] = {0}; // MUST use a 16 character buffer for IMEI!
   uint8_t imeiLen = modem.getIMEI(imei);
   if (imeiLen > 0) {
     printStatus("Module IMEI: "); Serial.println(imei);
@@ -299,28 +322,6 @@ bool initializeRotaryHall() {
 }
 
 // Data Functions
-
-// Defining Sensor Data Struct
-struct SensorData {
-    // Location Data
-    float latitude;        // Latitude coordinate of the sensor's location
-    float longitude;       // Longitude coordinate of the sensor's location
-
-    // Weather Data
-    float temperature;     // Ambient temperature measured in degrees Celsius
-    float pressure;        // Atmospheric pressure measured in hectoPascals (hPa)
-    float humidity;        // Relative humidity measured in percent (%)
-    bool rain;             // Presence of rain: true if raining, false otherwise
-
-    // Environmental Data
-    float lightLevel;      // Ambient light level measured in lux
-    float windSpeed;       // Wind speed measured in kilometers per hour (km/h)
-    int windDirection;     // Wind direction measured in degrees from true north
-
-    // Air Quality Data
-    unsigned int tvoc;     // Total Volatile Organic Compounds measured in parts per billion (ppb)
-    unsigned int eco2;     // Equivalent CO2 measured in parts per million (ppm)
-};
 
 // Reads sensorData
 SensorData readSensors() {
@@ -526,10 +527,10 @@ bool toggleGPS(bool status) {
   String action = status ? "on" : "off";
 
   if (!modem.enableGPS(status)) {
-    printStatus(F("GPS failed to toggle ") + action);
+    printStatus(String(F("GPS failed to toggle ")) + action);
     return false;
   } else {
-    printStatus(F("GPS toggled ") + action);
+    printStatus(String(F("GPS toggled ")) + action);
     return true;
   }
 }
@@ -600,7 +601,7 @@ void enableRTC() {
 
 // enable NTP time sync
 void enableNTP() {
-  if (!modem.enableNTPTimeSync(true, F("pool.ntp.org")))
+  if (!modem.enableNTPTimeSync(true, F("pool.ntp.org"))) {
     printStatus(F("NTP enable failed"));
   } else {
     printStatus(F("NTP enabled"));
