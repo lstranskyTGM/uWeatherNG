@@ -58,8 +58,8 @@ Botletics_modem_LTE modem = Botletics_modem_LTE();
 
 // Variables that get saved during DeepSleep
 RTC_DATA_ATTR int bootCount = 0;
-RTC_DATA_ATTR boolean requestedNTP;     // If NTP Server was already requested
-RTC_DATA_ATTR boolean bIsRaining = false;       // Last Known Rain Value for next boot (Inital state not raining)
+//RTC_DATA_ATTR boolean requestedNTP;               // If NTP Server was already requested
+RTC_DATA_ATTR boolean bIsRaining = false;         // Last Known Rain Value for next boot (Inital state not raining)
 
 // Declarations for Display
 #define SCREEN_WIDTH 128        // OLED display width, in pixels
@@ -91,23 +91,32 @@ unsigned long measurementDuration = 10000;     // Measurement duration in millis
 // Defining Sensor Data Struct
 struct SensorData {
     // Location Data
-    float latitude;        // Latitude coordinate of the sensor's location
-    float longitude;       // Longitude coordinate of the sensor's location
+    float latitude;         // Latitude coordinate of the sensor's location
+    float longitude;        // Longitude coordinate of the sensor's location
+    float altitude;         // Altitude in meters above sea level
 
     // Weather Data
-    float temperature;     // Ambient temperature measured in degrees Celsius
-    float pressure;        // Atmospheric pressure measured in hectoPascals (hPa)
-    float humidity;        // Relative humidity measured in percent (%)
-    bool rain;             // Presence of rain: true if raining, false otherwise
+    float temperature;      // Ambient temperature measured in degrees Celsius
+    float pressure;         // Atmospheric pressure measured in hectoPascals (hPa)
+    float humidity;         // Relative humidity measured in percent (%)
+    bool rain;              // Presence of rain: true if raining, false otherwise
 
     // Environmental Data
-    float lightLevel;      // Ambient light level measured in lux
-    float windSpeed;       // Wind speed measured in kilometers per hour (km/h)
-    int windDirection;     // Wind direction measured in degrees from true north
+    float lightLevel;       // Ambient light level measured in lux
+    float windSpeed;        // Wind speed measured in kilometers per hour (km/h)
+    int windDirection;      // Wind direction measured in degrees from true north
 
     // Air Quality Data
-    unsigned int tvoc;     // Total Volatile Organic Compounds measured in parts per billion (ppb)
-    unsigned int eco2;     // Equivalent CO2 measured in parts per million (ppm)
+    unsigned int tvoc;      // Total Volatile Organic Compounds measured in parts per billion (ppb)
+    unsigned int eco2;      // Equivalent CO2 measured in parts per million (ppm)
+};
+
+// Defining GPS Data Struct
+struct GPSData {
+    float latitude;         // Latitude in decimal degrees
+    float longitude;        // Longitude in decimal degrees
+    float altitude;         // Altitude in meters above sea level
+    bool valid;             // Validity of the GPS data
 };
 
 // ESP32 ID
@@ -116,18 +125,29 @@ static const int ESP32_ID = 101;
 void setup() {
   Serial.begin(115200);
 
+  // Initalize Display first to show status messages
   initializeSH1106G();
   printLogo();
   delay(2000);
-  initializeLTEModem();
-  initializeDevices();
 
   ++bootCount;
   printStatus("BootCount: " + String(bootCount));
 
+  // Initalize all other Sensors or Modules
+  initializeLTEModem();
+  initializeDevices();
+
+  // Turn on GPS at 1 boot
+  if (bootCount == 0 || getGPSStatus() == 0) {
+    toggleGPS(true);
+  }
+  // Implement check if there is still no fix after a long time
+
+  // Read Sensor Data
   SensorData data = readSensors();
   mqttPublish(data);
 
+  // Enter DeepSleep
   configureDeepSleep(TIME_TO_SLEEP * uS_TO_S_FACTOR);
   startDeepSleep();
 }
@@ -343,10 +363,16 @@ SensorData readSensors() {
   printStatus("WindDirection="+String(data.windDirection)+"°");
 
   // Read GNSS
-  //data.latitude = 0.0;
-  //data.longitude = 0.0;
-  //printStatus("Latitude="+String(data.latitude)+"°");
-  //printStatus("Longitude="+String(data.longitude)+"°");
+  GPSData gpsData = getGPSData() 
+  if (gpsData.valid) {
+    data.latitude = gpsData.latitude;
+    data.longitude = gpsData.longitude;
+    data.altitude = gpsData.altitude;
+  } else {
+    data.latitude = -1;  // error value
+    data.longitude = -1; // error value
+    data.altitude = -1;  // error value
+  }
 
   return data;
 }
@@ -429,6 +455,7 @@ void mqttPublish(SensorData data) {
   String lineProtocol = "weather,stationID=" + String(ESP32_ID) + " "
                         + String("latitude=") + data.latitude + ","
                         + String("longitude=") + data.longitude + ","
+                        + String("altitude=") + data.altitude + ","
                         + String("temperature=") + data.temperature + ","
                         + String("pressure=") + data.pressure + ","
                         + String("humidity=") + data.humidity + ","
@@ -485,28 +512,39 @@ int8_t getGPSStatus() {
   return stat;
 }
 
-void getGPSData() {
-    float latitude, longitude, speed_kph, heading, altitude;
-    
-    // For UTC time parsing.
-    /* 
-    float second;
-    uint16_t year;
-    uint8_t month, day, hour, minute;
-    */
+GPSData getGPSData() {
+  GPSData gpsData;
+  float latitude, longitude, speed_kph, heading, altitude;
 
-    // For UTC time data
-    // if (modem.getGPS(&latitude, &longitude, &speed_kph, &heading, &altitude, &year, &month, &day, &hour, &minute, &second)) {
+  // For UTC time parsing.
+  /* 
+   float second;
+  uint16_t year;
+  uint8_t month, day, hour, minute;
+  */
+
+  // For UTC time data
+  // if (modem.getGPS(&latitude, &longitude, &speed_kph, &heading, &altitude, &year, &month, &day, &hour, &minute, &second)) {
+
+  // Check for GPS status before
+  if (getGPSStatus() == 3) {
     if (modem.getGPS(&latitude, &longitude, &speed_kph, &heading, &altitude)) { // Use this line if UTC time is not needed
-        Serial.println(F("---------------------"));
-        Serial.print(F("Latitude: ")); Serial.println(latitude, 6);
-        Serial.print(F("Longitude: ")); Serial.println(longitude, 6);
-        Serial.print(F("Speed: ")); Serial.println(speed_kph);
-        Serial.print(F("Heading: ")); Serial.println(heading);
-        Serial.print(F("Altitude: ")); Serial.println(altitude);
-        
-        // For UTC time parsing.
-        /*
+      //Serial.println(F("---------------------"));
+      printStatus(F("GPS Data Retrieved Successfully"));
+      printStatus("Latitude: " + String(latitude, 6) + "°");
+      printStatus("Longitude: " + String(longitude, 6) + "°");
+      //Serial.print(F("Speed: ")); Serial.println(speed_kph);
+      //Serial.print(F("Heading: ")); Serial.println(heading);
+      printStatus("Altitude: " + String(altitude) + "m");
+
+      // Add Data to GPSData
+      gpsData.latitude = latitude;
+      gpsData.longitude = longitude;
+      gpsData.altitude = altitude;
+      gpsData.valid = true;
+
+      // For UTC time parsing.
+      /*
         Serial.println(F("---------------------"));
         Serial.print(F("Year: ")); Serial.println(year);
         Serial.print(F("Month: ")); Serial.println(month);
@@ -515,29 +553,50 @@ void getGPSData() {
         Serial.print(F("Minute: ")); Serial.println(minute);
         Serial.print(F("Second: ")); Serial.println(second);
         Serial.println(F("---------------------"));
-        */
+      */
+    } else {
+      printStatus("Failed to retrieve GPS data despite 3D fix");
+      gpsData.valid = false;
     }
+  } else {
+    printStatus("GPS fix not adequate for data retrieval");
+    gpsData.valid = false;
+  }
+
+  return gpsData;
 }
 
 // Time Functions
 
-// enable network time sync
-void enableRTC() {
-  if (!modem.enableRTC(true)) {
-    printStatus(F("RTC enable failed"));
+// toggle network time sync
+bool toggleRTC(bool status) {
+  // Determine the action being taken based on the status
+  String action = status ? "on" : "off";
+
+  if (!modem.enableRTC(status)) {
+    printStatus(String("RTC failed to toggle ") + action);
+    return false;
   } else {
-    printStatus(F("RTC enabled"));
+    printStatus(String("RTC toggled ") + action);
+    return true;
   }
 }
 
-// enable NTP time sync
-void enableNTP() {
-  if (!modem.enableNTPTimeSync(true, F("pool.ntp.org"))) {
-    printStatus(F("NTP enable failed"));
+
+// toggle NTP time sync
+bool toggleNTP(bool status) {
+  // Determine the action being taken based on the status
+  String action = status ? "on" : "off";
+
+  if (!modem.enableNTPTimeSync(status, F("pool.ntp.org"))) {
+    printStatus(String("NTP failed to toggle ") + action);
+    return false;
   } else {
-    printStatus(F("NTP enabled"));
+    printStatus(String("NTP toggled ") + action);
+    return true;
   }
 }
+
 
 // DeepSleep Functions
 // Calculate the remaining time for deep sleep using (interval - millis())
