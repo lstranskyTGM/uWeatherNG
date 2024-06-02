@@ -80,8 +80,8 @@ RTC_DATA_ATTR boolean bIsRaining = false;         // Last Known Rain Value for n
 Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);    // OLED display instance
 
 // Declarations for OLED console buffer
-String textLines[]={"", "", "", "", "", "", "", ""};    // Buffer to hold up lines of text for OLED display output
-int curLine=0;                                          // Current line index in the buffer
+String textLines[8] = {""};     // Buffer to hold up lines of text for OLED display output
+int curLine=0;                  // Current line index in the buffer
 
 // Sensors/Modules
 // Sensor Object Declerations
@@ -727,32 +727,24 @@ void printStatus(String statusText) {
  * @param statusText The text to display on the OLED, truncated to 21 characters if longer.
  */
 void printOledLine(String statusText) {
-   if (curLine > 7) {
-      textLines[0] = textLines[1];
-      textLines[1] = textLines[2];
-      textLines[2] = textLines[3];
-      textLines[3] = textLines[4];
-      textLines[4] = textLines[5];
-      textLines[5] = textLines[6];
-      textLines[6] = textLines[7];
-      textLines[7] = statusText.substring(0,21);
-   } else {
-      textLines[curLine] = statusText.substring(0,21);
-      curLine++;
-   }
-   display.clearDisplay();
-   display.setTextSize(1);
-   display.setTextColor(WHITE);
-   display.setCursor(0, 0);
-   display.println(textLines[0]);
-   display.println(textLines[1]);
-   display.println(textLines[2]);
-   display.println(textLines[3]);
-   display.println(textLines[4]);
-   display.println(textLines[5]);
-   display.println(textLines[6]);
-   display.println(textLines[7]);
-   display.display(); 
+  if (curLine > 7) {
+    // Scroll lines up when the buffer is full
+    for (int i = 0; i < 7; i++) {
+      textLines[i] = textLines[i + 1];
+    }
+    textLines[7] = statusText.substring(0, 21);
+  } else {
+    // Add new line to buffer
+    textLines[curLine++] = statusText.substring(0,21);
+  }
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0);
+  for (int i = 0; i < 8; i++) {
+    display.println(textLines[i]);
+  }
+  display.display(); 
 }
 
 /**
@@ -855,10 +847,10 @@ void printLogo() {
  * @return The absolute humidity in milligrams per cubic meter (mg/m^3).
  */
 uint32_t getAbsoluteHumidity(float temperature, float humidity) {
-    // approximation formula from Sensirion SGP30 Driver Integration chapter 3.15
-    const float absoluteHumidity = 216.7f * ((humidity / 100.0f) * 6.112f * exp((17.62f * temperature) / (243.12f + temperature)) / (273.15f + temperature)); // [g/m^3]
-    const uint32_t absoluteHumidityScaled = static_cast<uint32_t>(1000.0f * absoluteHumidity); // [mg/m^3]
-    return absoluteHumidityScaled;
+  // approximation formula from Sensirion SGP30 Driver Integration chapter 3.15
+  const float absoluteHumidity = 216.7f * ((humidity / 100.0f) * 6.112f * exp((17.62f * temperature) / (243.12f + temperature)) / (273.15f + temperature)); // [g/m^3]
+  const uint32_t absoluteHumidityScaled = static_cast<uint32_t>(1000.0f * absoluteHumidity); // [mg/m^3]
+  return absoluteHumidityScaled;
 }
 
 /**
@@ -888,6 +880,8 @@ float calculateWindSpeed(int rotations, unsigned long duration) {
 void countRotation() {
   rotationCount++;
 }
+
+
 
 
 
