@@ -1,53 +1,63 @@
 /*
- * This is the main script for the weather datalogging Project
- * Projekt: uWeather
+ * Projekt: uWeather Datalogging System
+ * Description: Utilizes ESP32 to measure environmental data with various sensors, transmitting results via MQTT. 
+ * Optimized for low-power consumption with automated deep sleep cycles.
+ * Author: Leonhard Stransky
+ * Creation Date: 2023.05.07
  */
 
 // Libraries
-#include <time.h>
-#include <ESP32Time.h>
-#include <Wire.h>
-#include <BH1750.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BME280.h>
-#include <Adafruit_SGP30.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SH110X.h>
-#include <HardwareSerial.h>
-#include <BotleticsSIM7000.h>
+#include <time.h>                       // Standard C library for time-related functions
+#include <ESP32Time.h>                  // Time management for ESP32, source: https://github.com/fbiego/ESP32Time
+#include <Wire.h>                       // Wire Library for I2C communication, part of the Arduino core
+#include <BH1750.h>                     // Ambient light sensor library, source: https://github.com/claws/BH1750
+#include <Adafruit_Sensor.h>            // Adafruit Unified Sensor Driver, source: https://github.com/adafruit/Adafruit_Sensor
+#include <Adafruit_BME280.h>            // Adafruit library for BME280 sensors, source: https://github.com/adafruit/Adafruit_BME280_Library
+#include <Adafruit_SGP30.h>             // Adafruit library for the SGP30 gas sensor, source: https://github.com/adafruit/Adafruit_SGP30
+#include <Adafruit_GFX.h>               // Base library for Adafruit’s display drivers, source: https://github.com/adafruit/Adafruit-GFX-Library
+#include <Adafruit_SH110X.h>            // Adafruit library for SH110x Monochrome OLED/LED Displays, source: https://github.com/adafruit/Adafruit_SH110X
+#include <HardwareSerial.h>             // Provides Serial communication functionality on ESP32
+#include <BotleticsSIM7000.h>           // Botletics SIM7000 LTE module library, source: https://github.com/botletics/SIM7000-LTE-Shield
 
 // LTE modem details
-#define SIMCOM_7000
-#define TX 16 // ESP32 hardware serial RX2 (GPIO16)
-#define RX 17 // ESP32 hardware serial TX2 (GPIO17)
+#define SIMCOM_7000     // LTE Module Chip
+#define TX 16           // ESP32 hardware serial RX2 (GPIO16)
+#define RX 17           // ESP32 hardware serial TX2 (GPIO17)
 
 // MQTT Broker details
-#define MQTT_SERVER      "mqtt.broker.net"
-#define MQTT_PORT        1883
-#define MQTT_USERNAME    "YourMQTTUsername"
-#define MQTT_PASSWORD    "YourMQTTPassword"
-#define MQTT_CLIENTID    "YourClientID"
+#define MQTT_SERVER      "mqtt.broker.net"      // The address of the MQTT broker server
+// Common MQTT Ports:
+// 1883: Default unencrypted port
+// 8883: Default encrypted port (TLS/SSL)
+// 1884: MQTT over WebSockets (unencrypted)
+// 8884: MQTT over WebSockets (encrypted)
+#define MQTT_PORT        1883                   // The port of the MQTT broker server
+#define MQTT_USERNAME    "YourMQTTUsername"     // Optional: Username for MQTT broker authentication, if required
+#define MQTT_PASSWORD    "YourMQTTPassword"     // Optional: Password for MQTT broker authentication, if required
+#define MQTT_CLIENTID    "YourClientID"         // Optional: A unique client identifier used to identify the device to the broker
 
 // Other Settings
 
-// Boolean flag indicating whether MQTT messages should be retained on the broker.
-// Retain messages are stored on the broker and sent to new subscribers when they subscribe to a topic.
-// 0 (false) means messages are not retained, 1 (true) means messages are retained.
+// Boolean flag indicating whether MQTT messages should be retained on the broker
+// Retain messages are stored on the broker and sent to new subscribers when they subscribe to a topic
+// If set to 0 (false), messages are not retained, not stored on the broker after delivery
+// If set to 1 (true), messages are retained, stored on the broker and sends them to new subscribers
 const bool retain_messages = 0;
 
-// Quality of Service (QoS) level for MQTT messages.
-// QoS 0: The broker/client will deliver the message once, with no confirmation.
-// QoS 1: The broker/client will deliver the message at least once, with confirmation required.
-// QoS 2: The broker/client will deliver the message exactly once by using a four-step handshake.
-// This setting specifies a QoS level of 2, ensuring that messages are delivered exactly once.
+// Quality of Service (QoS) level for MQTT messages
+// QoS 0: The broker/client will deliver the message once, with no confirmation
+// QoS 1: The broker/client will deliver the message at least once, with confirmation required
+// QoS 2: The broker/client will deliver the message exactly once by using a four-step handshake
+// This setting specifies a QoS level of 2, ensuring that messages are delivered exactly once
 const int qos_level = 2;
 
 // MQTT Topics
-// const char* topicSensors = "sensors/data";
+// Topic under which sensor data will be published.
+const char* topicSensors = "sensors/";
 
 // For ESP32 hardware serial
-HardwareSerial modemSS(1);
-Botletics_modem_LTE modem = Botletics_modem_LTE();
+HardwareSerial modemSS(1);                            // Instance of the HardwareSerial class to manage serial communication
+Botletics_modem_LTE modem = Botletics_modem_LTE();    // Instance of the LTE modem class
 
 // Declarations for ESP32 RTC
 //ESP32Time rtc;
@@ -57,21 +67,21 @@ Botletics_modem_LTE modem = Botletics_modem_LTE();
 #define TIME_TO_SLEEP 5 * 60        // Time ESP32 will go to sleep (in seconds)
 
 // Variables that get saved during DeepSleep
-RTC_DATA_ATTR int bootCount = 0;
+RTC_DATA_ATTR int bootCount = 0;                  // Counts the number of boots since last power cycle
 //RTC_DATA_ATTR boolean requestedNTP;               // If NTP Server was already requested
 RTC_DATA_ATTR boolean bIsRaining = false;         // Last Known Rain Value for next boot (Inital state not raining)
 
 // Declarations for Display
-#define SCREEN_WIDTH 128        // OLED display width, in pixels
-#define SCREEN_HEIGHT 64        // OLED display height, in pixels
-#define OLED_RESET     -1       // Reset pin
+#define SCREEN_WIDTH 128        // OLED display width in pixels
+#define SCREEN_HEIGHT 64        // OLED display height in pixels
+#define OLED_RESET     -1       // Reset pin for the OLED Display (-1 if not used)
 //#define SCREEN_ADDRESS 0x3c     // Address 0x3D for 128x64
-#define WHITE 1
-Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+#define WHITE 1                 // Color definition for drawing text and graphics on the display
+Adafruit_SH1106G display = Adafruit_SH1106G(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);    // OLED display instance
 
 // Declarations for OLED console buffer
-String textLines[]={"", "", "", "", "", "", "", ""};
-int curLine=0;
+String textLines[]={"", "", "", "", "", "", "", ""};    // Buffer to hold up lines of text for OLED display output
+int curLine=0;                                          // Current line index in the buffer
 
 // Sensors/Modules
 // Sensor Object Declerations
@@ -101,7 +111,7 @@ struct SensorData {
     float humidity;         // Relative humidity measured in percent (%)
     bool rain;              // Presence of rain: true if raining, false otherwise
 
-    // Environmental Data
+    // Other Environmental Data
     float lightLevel;       // Ambient light level measured in lux
     float windSpeed;        // Wind speed measured in kilometers per hour (km/h)
     int windDirection;      // Wind direction measured in degrees from true north
@@ -119,9 +129,12 @@ struct GPSData {
     bool valid;             // Validity of the GPS data
 };
 
-// ESP32 ID
-static const int ESP32_ID = 101;
+// WeatherStation ID
+static const int WeatherStationID  = 101;    // Unique identifier for this weather station
 
+/**
+ * Setup function: Initializes components, manages data transmission, and configures deep sleep settings.
+ */
 void setup() {
   Serial.begin(115200);
 
@@ -130,40 +143,43 @@ void setup() {
   printLogo();
   delay(2000);
 
+  // Increment boot count on each restart
   ++bootCount;
   printStatus("BootCount: " + String(bootCount));
 
   // Initalize all other Sensors or Modules
-  initializeLTEModem();
   initializeDevices();
 
-  // Turn on GPS at 1 boot
+  // Turn on GPS at first boot or if no GPS fix is detected
   if (bootCount == 0 || getGPSStatus() == 0) {
     toggleGPS(true);
   }
   // Implement check if there is still no fix after a long time
 
-  // Read Sensor Data
+  // Read sensor data and publish it via MQTT
   SensorData data = readSensors();
   mqttPublish(data);
 
-  // Enter DeepSleep
+  // Configure and start deep sleep to save power
   configureDeepSleep(TIME_TO_SLEEP * uS_TO_S_FACTOR);
   startDeepSleep();
 }
 
 void loop() {
-  // Not executed because of Deep Sleep
+  // Not executed because the device enters deep sleep after setup
 }
 
 // Initialization Functions
 
-// Initialize and setups all Devices
+/**
+ * Initializes all connected sensors and modules.
+ * Starts the I2C bus and configures each device for operation.
+ */
 void initializeDevices() {
   // Start i2c bus
   Wire.begin();
 
-  // Initialize Devices
+  // Initialize individual sensors and modules
 //  initializeSH1106G();
   initializeLTEModem();
   initializeBH1750();
@@ -174,6 +190,10 @@ void initializeDevices() {
   initializeHall();
 }
 
+/**
+ * Initializes the SH1106G OLED display.
+ * @return True if device is successfully initialized, false otherwise.
+ */
 bool initializeSH1106G() {
   if (display.begin(0x3c, true)) { 
     Serial.println(F("SH1106G allocation successfull"));
@@ -184,6 +204,10 @@ bool initializeSH1106G() {
   }
 }
 
+/**
+ * Initializes the LTE modem
+ * @return True if device is successfully initialized, false otherwise.
+ */
 bool initializeLTEModem() {
   printStatus(F("Initializing LTE modem...(May take several seconds)"));
 
@@ -202,6 +226,7 @@ bool initializeLTEModem() {
   // Check if modem is available
   if (! modem.begin(modemSS)) {
     printStatus(F("LTE modem not found - check wiring"));
+    return false;
   } else {
     printStatus(F("LTE modem initialized"));
   }
@@ -232,8 +257,14 @@ bool initializeLTEModem() {
   modem.setFunctionality(1); // AT+CFUN=1
 
   modem.setNetworkSettings(F("webLGaut")); // For HoT IoT Simcard
+
+  return true;
 }
 
+/**
+ * Initializes the BH1750 (light meter)
+ * @return True if device is successfully initialized, false otherwise.
+ */
 bool initializeBH1750() {
   lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE, 0x23);
   float lux = lightMeter.readLightLevel();
@@ -246,6 +277,10 @@ bool initializeBH1750() {
   }
 }
 
+/**
+ * Initializes the BME280 (temperature, humidity, pressure)
+ * @return True if device is successfully initialized, false otherwise.
+ */
 bool initializeBME280() {
   if (bme.begin(0x76)) {
     printStatus(F("BME280 sensor initialization successful"));
@@ -256,6 +291,10 @@ bool initializeBME280() {
   }
 }
 
+/**
+ * Initializes the FC-37 (rain)
+ * @return True if device is successfully initialized, false otherwise.
+ */
 bool initializeRain() {
   pinMode(RAIN_ANALOG_PIN, INPUT);
   int rainValue = analogRead(RAIN_ANALOG_PIN);
@@ -264,12 +303,18 @@ bool initializeRain() {
         return true;
     } else {
         printStatus(F("Rain sensor not found - check wiring"));
+        return false;
     }
 }
 
+/**
+ * Initializes the SGP30 (air quality)
+ * @return True if device is successfully initialized, false otherwise.
+ */
 bool initializeSGP30() {
   if (!sgp.begin()){
     printStatus(F("SGP30 sensor not found - check wiring"));
+    return false;
   } else {
     printStatus(F("SGP30 sensor initialized"));
     Serial.print(F("Found SGP30 serial #"));
@@ -290,9 +335,14 @@ bool initializeSGP30() {
         printStatus(F("Failed to get baseline readings"));
       }
     }
+    return true;
   }
 }
 
+/**
+ * Initializes the anemometer (wind speed)
+ * @return True if device is successfully initialized, false otherwise.
+ */
 bool initializeHall() {
   pinMode(WIND_SPEED_DIGITAL_PIN, INPUT);
   if (true) {   // Add check
@@ -304,11 +354,15 @@ bool initializeHall() {
   }
 }
 
+/**
+ * Initializes the wind vane (wind direction)
+ * @return True if device is successfully initialized, false otherwise.
+ */
 bool initializeRotaryHall() {
 //  pinMode(WIND_DIRECTION_ANALOG_PIN, OUTPUT);
   pinMode(WIND_DIRECTION_ANALOG_PIN, INPUT);
   int sensorValue = analogRead(WIND_DIRECTION_ANALOG_PIN);
-  if (true) {   // Add check
+  if (sensorValue >= 0 && sensorValue <= 1023) {   // Add check
     printStatus(F("Rotary Hall sensor initialized"));
     return true;
   } else {
@@ -319,7 +373,10 @@ bool initializeRotaryHall() {
 
 // Data Functions
 
-// Reads sensorData
+/**
+ * Reads and aggregates data from environmental sensors into a structured format.
+ * @return SensorData struct containing all the sensor readings.
+ */
 SensorData readSensors() {
   // Create struct
   SensorData data;
@@ -362,16 +419,17 @@ SensorData readSensors() {
   data.windDirection = map(windDirAnalogRead, 0, 1023, 0, 359);
   printStatus("WindDirection="+String(data.windDirection)+"°");
 
-  // Read GNSS
-  GPSData gpsData = getGPSData() 
+  // Fetch GPS data if a valid fix is available
+  GPSData gpsData = getGPSData();
   if (gpsData.valid) {
     data.latitude = gpsData.latitude;
     data.longitude = gpsData.longitude;
     data.altitude = gpsData.altitude;
   } else {
-    data.latitude = -1;  // error value
-    data.longitude = -1; // error value
-    data.altitude = -1;  // error value
+    // To indicate invalid data
+    data.latitude = -1;  
+    data.longitude = -1; 
+    data.altitude = -1;  
   }
 
   return data;
@@ -424,15 +482,18 @@ float measureWindSpeed() {
 
 // Network Functions
 
-// MQTT Publish
-// rtc.getTime("%A, %B %d %Y %H:%M:%S")
+/**
+ * Publishes collected sensor data to an MQTT broker using specified settings.
+ * Constructs and sends a data payload formatted according to the InfluxDB Line Protocol.
+ * @param data The SensorData struct containing environmental readings to be published.
+ */
 void mqttPublish(SensorData data) {
-  // Open Connection
+  // Establish a wireless connection
   modem.openWirelessConnection(true);
 
-  // Set up MQTT parameters (see MQTT app note for explanation of parameter values)
+  // Configure MQTT settings for connection
   modem.MQTT_setParameter("URL", MQTT_SERVER, MQTT_PORT);
-  // Set up MQTT username and password if necessary
+  // Optional settings
   modem.MQTT_setParameter("USERNAME", MQTT_USERNAME);
   modem.MQTT_setParameter("PASSWORD", MQTT_PASSWORD);
   modem.MQTT_setParameter("CLIENTID", MQTT_CLIENTID);
@@ -440,6 +501,9 @@ void mqttPublish(SensorData data) {
   printStatus(F("Connecting to MQTT broker..."));
   if (! modem.MQTT_connect(true)) {
     printStatus(F("MQTT broker connect failed"));
+    // Closes connection on failure
+    modem.openWirelessConnection(false);
+    return;
   } else { 
     printStatus(F("MQTT broker connected"));
   }
@@ -448,11 +512,13 @@ void mqttPublish(SensorData data) {
   //time_t now;
   //time(&now);  // Get the current time as a time_t object
 
-  // Topic for publish
-  String topic = "sensors/" + ESP32_ID;
+  // Configure the topic string with the station ID
+  String topic = String(topicSensors) + String(WeatherStationID);
 
-  // Format the sensor data into InfluxDB Line Protocol
-  String lineProtocol = "weather,stationID=" + String(ESP32_ID) + " "
+  // Add checks for building Line Protocol
+
+  // Build the payload in InfluxDB Line Protocol format
+  String lineProtocol = "weather,stationID=" + String(WeatherStationID) + " "
                         + String("latitude=") + data.latitude + ","
                         + String("longitude=") + data.longitude + ","
                         + String("altitude=") + data.altitude + ","
@@ -473,13 +539,18 @@ void mqttPublish(SensorData data) {
     printStatus(F("Publish successful")); 
   }
 
-  // Close Connection
+  // Close Connection (MQTT Broker & wireless)
   modem.MQTT_connect(false);
   modem.openWirelessConnection(false);
 }
 
 // GPS Functions
 
+/**
+ * Toggles the GPS module on or off.
+ * @param status True to turn on the GPS, false to turn it off.
+ * @return true if the GPS toggling was successful, false otherwise.
+ */
 bool toggleGPS(bool status) {
   // Determine the action being taken based on the status
   String action = status ? "on" : "off";
@@ -493,25 +564,33 @@ bool toggleGPS(bool status) {
   }
 }
 
+/**
+ * Queries the current GPS status from the modem and prints the result.
+ * @return GPS status code
+ */
 int8_t getGPSStatus() {
   int8_t stat;
 
   // Check GPS fix
   stat = modem.GPSstatus();
   if (stat < 0) {
-    Serial.println(F("Failed to query"));
+    printStatus(F("Failed to query"));
   } else if (stat == 0) {
-    Serial.println(F("GPS off"));
+    printStatus(F("GPS off"));
   } else if (stat == 1) {
-    Serial.println(F("No fix"));
+    printStatus(F("No fix"));
   } else if (stat == 2) {
-    Serial.println(F("2D fix"));
+    printStatus(F("2D fix"));
   } else if (stat == 3) {
-    Serial.println(F("3D fix"));
+    printStatus(F("3D fix"));
   }
   return stat;
 }
 
+/**
+ * Retrieves GPS data if a 3D fix is available.
+ * @return Struct containing GPS data with validity flag.
+ */
 GPSData getGPSData() {
   GPSData gpsData;
   float latitude, longitude, speed_kph, heading, altitude;
@@ -568,7 +647,11 @@ GPSData getGPSData() {
 
 // Time Functions
 
-// toggle network time sync
+/**
+ * Toggles the RTC on or off.
+ * @param status True to turn on the RTC, false to turn it off.
+ * @return true if the toggle was successful, false otherwise.
+ */
 bool toggleRTC(bool status) {
   // Determine the action being taken based on the status
   String action = status ? "on" : "off";
@@ -582,8 +665,11 @@ bool toggleRTC(bool status) {
   }
 }
 
-
-// toggle NTP time sync
+/**
+ * Toggles the NTP time synchronizatio on or off.
+ * @param status True to turn on the NTP sync, false to turn it off.
+ * @return true if the toggle was successful, false otherwise.
+ */
 bool toggleNTP(bool status) {
   // Determine the action being taken based on the status
   String action = status ? "on" : "off";
@@ -597,16 +683,22 @@ bool toggleNTP(bool status) {
   }
 }
 
-
 // DeepSleep Functions
 // Calculate the remaining time for deep sleep using (interval - millis())
 
-// Starts DeepSleep and sets wakeup event
+/**
+ * Configures the ESP32 to wake up after a specified sleep time.
+ * @param sleepTime Time to sleep in microseconds before waking up.
+ */
 void configureDeepSleep(int sleepTime) {
   printStatus(F("Set DeepSleep WakeUp.."));
   esp_sleep_enable_timer_wakeup(sleepTime);
 }
 
+/**
+ * Initiates deep sleep mode, suspending most CPU activities.
+ * The ULP (Ultra-Low-Power) coprocessor remains active and can perform tasks during deep sleep.
+ */
 void startDeepSleep() {
   printStatus(F("Starting DeepSleep.."));
   Serial.flush(); // Waits for the transmisson of outgoing serial data to complete
@@ -615,7 +707,10 @@ void startDeepSleep() {
 
 // Display Functions
 
-// Prints the Status on the Serial Monitor and OLED
+/**
+ * Displays a status message on both the Serial Monitor and the OLED display.
+ * @param statusText The text message to be displayed.
+ */
 void printStatus(String statusText) {
   Serial.println(statusText);
   // Status on display
@@ -625,6 +720,12 @@ void printStatus(String statusText) {
 
 // print console line to OLED 
 // manages a console buffer of 8 lines (x 21 chars) to simulate a terminal console on OLED
+
+/**
+ * Displays a line of text on the OLED display, managing a buffer to simulate a terminal console.
+ * This function handles up to 8 lines of text, scrolling older lines upward as new ones are added.
+ * @param statusText The text to display on the OLED, truncated to 21 characters if longer.
+ */
 void printOledLine(String statusText) {
    if (curLine > 7) {
       textLines[0] = textLines[1];
@@ -654,7 +755,10 @@ void printOledLine(String statusText) {
    display.display(); 
 }
 
-// Prints the uweather Logo
+/**
+ * Displays the uWeather logo on the OLED screen.
+ * Renders a predefined bitmap image.
+ */
 void printLogo() {
 
   // 'uweather', 128x64px
@@ -727,10 +831,20 @@ void printLogo() {
 
   // Display set image
   display.clearDisplay();
+  // Draws the bitmap image at the top-left corner of the display
   display.drawBitmap(0, 0, uWeather, SCREEN_WIDTH, SCREEN_HEIGHT, WHITE);
   display.display();
-
 }
+
+// Other Functions
+
+//String checkDataPoint(String dataPoint, float value, String unit, float invalidValue) {
+// Add code
+//}
+
+//String buildLinePrtocol() {
+// Add code
+//}
 
 // Calculation Functions
 
