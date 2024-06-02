@@ -19,8 +19,6 @@
 
 // LTE modem details
 #define SIMCOM_7000
-#define BOTLETICS_PWRKEY 18
-#define RST 5
 #define TX 16 // ESP32 hardware serial RX2 (GPIO16)
 #define RX 17 // ESP32 hardware serial TX2 (GPIO17)
 
@@ -32,15 +30,24 @@
 #define MQTT_CLIENTID    "YourClientID"
 
 // Other Settings
-// const bool retain_messages = false;
-// const int qos_level = 2;
+
+// Boolean flag indicating whether MQTT messages should be retained on the broker.
+// Retain messages are stored on the broker and sent to new subscribers when they subscribe to a topic.
+// 0 (false) means messages are not retained, 1 (true) means messages are retained.
+const bool retain_messages = 0;
+
+// Quality of Service (QoS) level for MQTT messages.
+// QoS 0: The broker/client will deliver the message once, with no confirmation.
+// QoS 1: The broker/client will deliver the message at least once, with confirmation required.
+// QoS 2: The broker/client will deliver the message exactly once by using a four-step handshake.
+// This setting specifies a QoS level of 2, ensuring that messages are delivered exactly once.
+const int qos_level = 2;
 
 // MQTT Topics
 // const char* topicSensors = "sensors/data";
 
 // For ESP32 hardware serial
 HardwareSerial modemSS(1);
-
 Botletics_modem_LTE modem = Botletics_modem_LTE();
 
 // Wifi login data
@@ -65,7 +72,7 @@ ESP32Time rtc;
 // Variables that get saved during DeepSleep
 RTC_DATA_ATTR int bootCount = 0;
 RTC_DATA_ATTR boolean requestedNTP;     // If NTP Server was already requested
-RTC_DATA_ATTR boolean bIsRaining;       // Last Known Rain Value for next boot
+RTC_DATA_ATTR boolean bIsRaining = false;       // Last Known Rain Value for next boot (Inital state not raining)
 
 // Declarations for Display
 #define SCREEN_WIDTH 128        // OLED display width, in pixels
@@ -119,7 +126,8 @@ void setup() {
 
   // connect_to_MySQL();
 
-  transferSensorData();
+  SensorData data = readSensors();
+  mqttPublish(data);
 
   // Disconnect from WiFi
   // WiFi.disconnect();
@@ -141,12 +149,13 @@ void initializeDevices() {
 
   // Initialize Devices
 //  initializeSH1106G();
+  initializeLTEModem();
   initializeBH1750();
   initializeBME280();
   initializeRain();
   initializeSGP30();
-  initializeHall();
   initializeRotaryHall();
+  initializeHall();
 }
 
 bool initializeSH1106G() {
@@ -160,13 +169,6 @@ bool initializeSH1106G() {
 }
 
 bool initializeLTEModem() {
-  pinMode(RST, OUTPUT);
-  digitalWrite(RST, HIGH); // Default state
-
-  // Turn on the module by pulsing PWRKEY low for a little bit
-  // This amount of time depends on the specific module that's used
-  modem.powerOn(BOTLETICS_PWRKEY); // Power on the module
-
   printStatus("Initializing LTE modem...(May take several seconds)");
 
   // SIM7000 takes about 3s to turn on and SIM7500 takes about 15s
@@ -296,6 +298,127 @@ bool initializeRotaryHall() {
   }
 }
 
+// Data Functions
+
+// Defining Sensor Data Struct
+struct SensorData {
+    // Location Data
+    float latitude;        // Latitude coordinate of the sensor's location
+    float longitude;       // Longitude coordinate of the sensor's location
+
+    // Weather Data
+    float temperature;     // Ambient temperature measured in degrees Celsius
+    float pressure;        // Atmospheric pressure measured in hectoPascals (hPa)
+    float humidity;        // Relative humidity measured in percent (%)
+    bool rain;             // Presence of rain: true if raining, false otherwise
+
+    // Environmental Data
+    float lightLevel;      // Ambient light level measured in lux
+    float windSpeed;       // Wind speed measured in kilometers per hour (km/h)
+    int windDirection;     // Wind direction measured in degrees from true north
+
+    // Air Quality Data
+    unsigned int tvoc;     // Total Volatile Organic Compounds measured in parts per billion (ppb)
+    unsigned int eco2;     // Equivalent CO2 measured in parts per million (ppm)
+};
+
+// Reads sensorData
+SensorData readSensors() {
+  // Create struct
+  SensorData data;
+
+  printStatus("Reading sensor data..");
+
+  // Read lightlevel (BH1750)
+  data.lightLevel = lightMeter.readLightLevel();
+  printStatus("LightLevel="+String(data.lightLevel)+"lux");
+
+  // Read temperature, pressure, and humidity (BME280)
+  data.temperature  = bme.readTemperature();
+  data.pressure = bme.readPressure() / 100.0F;
+  data.humidity = bme.readHumidity();
+  printStatus("Temperature ="+String(data.temperature)+"°C");
+  printStatus("Pressure="+String(data.pressure)+"hPa");
+  printStatus("Humidity="+String(data.humidity)+"%RH");
+
+  // Read rain status (FC-37)
+  data.rain = measureRain();
+  bIsRaining = data.rain;   // Set value for next boot
+  printStatus(data.rain ? "Raining=TRUE" : "Raining=NO");
+
+  // Read air quality (SGP30)
+  data.tvoc = sgp.TVOC;
+  data.eco2 = sgp.eCO2; 
+  // unsigned int rawH2 = sgp.rawH2;
+  // unsigned int rawEthanol = sgp.rawEthanol;
+  printStatus("TVOC="+String(data.tvoc)+"ppb");
+  printStatus("eC02="+String(data.eco2)+"ppm");
+  // printStatus("rawH2="+String(rawH2));
+  // printStatus("rawEthanol="+String(rawEthanol));
+
+  // Read wind speed (KY-003)
+  data.windSpeed = measureWindSpeed();
+  printStatus("WindSpeed="+String(data.windSpeed)+"km/h");
+
+  // Read wind direction
+  uint16_t windDirAnalogRead = analogRead(WIND_DIRECTION_ANALOG_PIN);
+  data.windDirection = map(windDirAnalogRead, 0, 1023, 0, 359);
+  printStatus("WindDirection="+String(data.windDirection)+"°");
+
+  // Read GNSS
+  //data.latitude = 0.0;
+  //data.longitude = 0.0;
+  //printStatus("Latitude="+String(data.latitude)+"°");
+  //printStatus("Longitude="+String(data.longitude)+"°");
+
+  return data;
+}
+
+/**
+ * Checks the rain sensor's analog value to determine if it is raining.
+ * Updates the `bIsRaining` status based on threshold values:
+ * - Sets `bIsRaining` to true if the reading is below 2700.
+ * - Sets `bIsRaining` to false if the reading is above 3400.
+ * @return bool - True if raining, false otherwise.
+ */
+bool measureRain() {
+  int rainAnalogVal = analogRead(RAIN_ANALOG_PIN);
+  bool isRaining;
+  if (!bIsRaining && rainAnalogVal < 2700) {
+    isRaining = true;
+  } else if (bIsRaining && rainAnalogVal > 3400) {
+    isRaining = false;
+  }
+  return isRaining;
+}
+
+/**
+ * Measures wind speed by counting rotations detected by the KY-003 Hall sensor.
+ * The function attaches an interrupt to the sensor, counts rotations for a fixed duration,
+ * and then calculates the wind speed based on the number of rotations.
+ * @return The calculated wind speed in meters per second.
+ */
+float measureWindSpeed() {
+  unsigned long startMillis = millis(); // Record start time
+  unsigned long currentMillis;
+  rotationCount = 0; // Reset rotation count at the beginning
+
+  // Attach interrupt to count rotations
+  attachInterrupt(digitalPinToInterrupt(WIND_SPEED_DIGITAL_PIN), countRotation, RISING);
+
+  // Loop until measurementDuration passes
+  do {
+    currentMillis = millis(); // Update current time
+  } while (currentMillis - startMillis < measurementDuration);
+
+  // Detach the interrupt to stop counting
+  detachInterrupt(digitalPinToInterrupt(WIND_SPEED_DIGITAL_PIN));
+
+  // Assuming each rotation is 1 meter of wind travel, adjust as per your anemometer's spec
+  // windSpeed = (rotationCount * 1.0 /* meters per rotation */) / (5 /* measurement interval in seconds */);
+  return calculateWindSpeed(rotationCount, measurementDuration);
+} 
+
 // Network Functions
 
 // Wifi
@@ -343,52 +466,9 @@ void requestNTP() {
 
 // MQTT
 
-// Reads and sends the Data from the Sensors to MQTT Server
-void transferSensorData() {
-
-  printStatus("Reading sensor data..");
-
-  // Read BH1750
-  float lightLevel = lightMeter.readLightLevel();
-  printStatus("LightLevel="+String(lightLevel)+"lux");
-
-  // Read BME280
-  float temparature = bme.readTemperature();
-  float pressure = bme.readPressure() / 100.0F;
-  float humidity = bme.readHumidity();
-  printStatus("Temperature="+String(temparature)+"°C");
-  printStatus("Pressure="+String(pressure)+"hPa");
-  printStatus("Humidity="+String(humidity)+"%RH");
-
-  // Read FC-37
-  measureRain();
-
-  // Read SGP30
-  unsigned int tvoc = sgp.TVOC;
-  unsigned int eco2 = sgp.eCO2; 
-  // unsigned int rawH2 = sgp.rawH2;
-  // unsigned int rawEthanol = sgp.rawEthanol;
-  printStatus("TVOC="+String(tvoc)+"ppb");
-  printStatus("eC02="+String(eco2)+"ppm");
-  // printStatus("rawH2="+String(rawH2));
-  // printStatus("rawEthanol="+String(rawEthanol));
-
-  // Read KY-003
-  float windSpeed = measureWindSpeed();
-  printStatus("WindSpeed="+String(windSpeed)+"km/h");
-
-  // Read Wind Vane
-  uint16_t windDirAnalogRead = analogRead(WIND_DIRECTION_ANALOG_PIN);
-  uint16_t windDirDeg = map(windDirAnalogRead, 0, 1023, 0, 359);
-
-  // Transfer Data
-  mqttPublish();  // Add data
-
-}
-
 // MQTT Publish
 // rtc.getTime("%A, %B %d %Y %H:%M:%S")
-void mqttPublish() {
+void mqttPublish(SensorData data) {
   // Open Connection
   modem.openWirelessConnection(true);
 
@@ -406,8 +486,29 @@ void mqttPublish() {
     printStatus(F("MQTT broker connected"));
   }
 
+  // Getting current time as Unix timestamp
+  //time_t now;
+  //time(&now);  // Get the current time as a time_t object
+
+  // Topic for publish
+  String topic = "sensors/" + ESP32_ID;
+
+  // Format the sensor data into InfluxDB Line Protocol
+  String lineProtocol = "weather,stationID=" + String(ESP32_ID) + " "
+                        + String("latitude=") + data.latitude + ","
+                        + String("longitude=") + data.longitude + ","
+                        + String("temperature=") + data.temperature + ","
+                        + String("pressure=") + data.pressure + ","
+                        + String("humidity=") + data.humidity + ","
+                        + String("rain=") + (data.rain ? "true" : "false") + ","
+                        + String("lightLevel=") + data.lightLevel + ","
+                        + String("windSpeed=") + data.windSpeed + ","
+                        + String("windDirection=") + data.windDirection + ","
+                        + String("tvoc=") + data.tvoc + ","
+                        + String("eco2=") + data.eco2;
+
   // Publish MQTT Data
-  if (!modem.MQTT_publish("voltage2", battBuff, strlen(battBuff), 1, 0)) {
+  if (!modem.MQTT_publish(topic.c_str(), lineProtocol.c_str(), lineProtocol.length(), qos_level, retain_messages)) {
     printStatus(F("Publish failed")); 
   } else {
     printStatus(F("Publish successful")); 
@@ -417,55 +518,6 @@ void mqttPublish() {
   modem.MQTT_connect(false);
   modem.openWirelessConnection(false);
 }
-
-// Data Functions
-
-/**
- * Checks the rain sensor's analog value to determine if it is raining.
- * Updates the `bIsRaining` status based on threshold values:
- * - Sets `bIsRaining` to true if the reading is below 2700.
- * - Sets `bIsRaining` to false if the reading is above 3400.
- */
-void measureRain() {
-  int rainAnalogVal = analogRead(RAIN_ANALOG_PIN);
-  if (!bIsRaining && rainAnalogVal < 2700) {
-    bIsRaining = true;
-  } else if (bIsRaining && rainAnalogVal > 3400) {
-    bIsRaining = false;
-  }
-  if (bIsRaining) {
-    printStatus("Raining=YES");
-  } else {
-    printStatus("Raining=NO");
-  }
-}
-
-/**
- * Measures wind speed by counting rotations detected by the KY-003 Hall sensor.
- * The function attaches an interrupt to the sensor, counts rotations for a fixed duration,
- * and then calculates the wind speed based on the number of rotations.
- * @return The calculated wind speed in meters per second.
- */
-float measureWindSpeed() {
-  unsigned long startMillis = millis(); // Record start time
-  unsigned long currentMillis;
-  rotationCount = 0; // Reset rotation count at the beginning
-
-  // Attach interrupt to count rotations
-  attachInterrupt(digitalPinToInterrupt(WIND_SPEED_DIGITAL_PIN), countRotation, RISING);
-
-  // Loop until measurementDuration passes
-  do {
-    currentMillis = millis(); // Update current time
-  } while (currentMillis - startMillis < measurementDuration);
-
-  // Detach the interrupt to stop counting
-  detachInterrupt(digitalPinToInterrupt(WIND_SPEED_DIGITAL_PIN));
-
-  // Assuming each rotation is 1 meter of wind travel, adjust as per your anemometer's spec
-  // windSpeed = (rotationCount * 1.0 /* meters per rotation */) / (5 /* measurement interval in seconds */);
-  return calculateWindSpeed(rotationCount, measurementDuration);
-} 
 
 // GPS Functions
 
@@ -537,8 +589,8 @@ void getGPSData() {
 
 // Time Functions
 
+// enable network time sync
 void enableRTC() {
-  // enable network time sync
   if (!modem.enableRTC(true)) {
     printStatus(F("RTC enable failed"));
   } else {
@@ -546,8 +598,8 @@ void enableRTC() {
   }
 }
 
+// enable NTP time sync
 void enableNTP() {
-  // enable NTP time sync
   if (!modem.enableNTPTimeSync(true, F("pool.ntp.org")))
     printStatus(F("NTP enable failed"));
   } else {
@@ -556,6 +608,7 @@ void enableNTP() {
 }
 
 // DeepSleep Functions
+// Calculate the remaining time for deep sleep using (interval - millis())
 
 // Starts DeepSleep and sets wakeup event
 void startDeepSleep() {
