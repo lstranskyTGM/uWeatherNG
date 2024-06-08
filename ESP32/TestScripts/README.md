@@ -1,7 +1,7 @@
 # Testscripts
 
-# ToDo List:
+# ToDo List
 
 - [x] ~~Buy Sensors~~
-- [ ] Write scripts
-- [ ] Check for errors
+- [x] ~~Write scripts~~
+- [x] ~~Check for errors~~
