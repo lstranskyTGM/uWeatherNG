@@ -1,5 +1,5 @@
 /*
- * This is a test file for the GY-SGP30 Air Quality Sensor
+ * This is a test file for the GY-SGP30 sensor (Air Quality)
  */
 
 #include <Wire.h>

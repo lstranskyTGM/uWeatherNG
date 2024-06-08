@@ -1,5 +1,5 @@
 /*
- * This is a test file for the KY-003 Hall Sensor
+ * This is a test file for the KY-003 Hall sensor (Anemometer)
  */
 
 #define SENSOR_PIN 23
