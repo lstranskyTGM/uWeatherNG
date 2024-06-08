@@ -8,7 +8,9 @@
 #include <Adafruit_BME280.h>
 
 #define SEALEVELPRESSURE_HPA (1013.25)
+#define RAIN_ANALOG_PIN 35
 
+boolean bIsRaining;
 BH1750 lightMeter;
 Adafruit_BME280 bme; // I2C
 
@@ -33,6 +35,8 @@ void loop() {
   printKY018();
 
   printBME280();
+
+  measureRain();
 }
 
 void printKY018() {
@@ -67,3 +71,17 @@ void printBME280() {
 
   Serial.println();
 }
+
+bool measureRain() {
+  int rainAnalogVal = analogRead(RAIN_ANALOG_PIN);
+  Serial.println("rainAnalog="+String(rainAnalogVal));
+  if (!bIsRaining && rainAnalogVal < 2500) {
+    bIsRaining = true;
+  } else if (bIsRaining && rainAnalogVal > 3000) {
+    bIsRaining = false;
+  }
+  Serial.println(bIsRaining ? F("Raining=TRUE") : F("Raining=FALSE"));
+  return bIsRaining;
+}
+
+
