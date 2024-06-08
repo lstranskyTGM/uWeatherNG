@@ -1,25 +1,22 @@
 # MainScript
 
-# ToDo List:
+# ToDo List
 
-- [x] ~~Implement WiFiConnection~~
-- [x] ~~Implement MySQLConnection~~
-- [x] ~~Implement NTPRequest~~
-- [x] ~~Implement DeepSleep~~
-- [x] ~~Implement ReadSensors (BME280, BH1750)~~
-- [X] ~~Implement ReadRainSensor~~
-- [ ] Implement ReadGPS
-- [x] ~~Implement WriteDisplay~~
-- [x] ~~Check if Code works~~
+- [x] ~~Implement SGP30 Sensor~~
+- [x] ~~Implement Anemometer~~
+- [x] ~~Implement Wind Vane~~
+- [x] ~~Implement LTE Modem~~
+- [x] ~~Implement MQTT Client~~
+- [x] ~~Implement Read GNSS~~
+- [ ] Implement Micro SD Card Reader
+- [x] ~~Update NTP Request~~
 
-## Possible Extensions:
+## Possible Extensions
 
 - [ ] Implement millis() instead of delay()
-- [ ] Implement Error Handling (goto)
-- [ ] Implement That NTP Request only runs once a day
-- [ ] Implement GPSTracker Wait time (5-10 min ON StartUp)
-- [ ] Implement Use of Networkprotocol MQTT
-- [ ] Implement that the Digital Pinns are only on when needed
+- [ ] Implement Start up delay to allow sensors to warm up
+- [ ] Implement power usage by controlling digital pins
+- [ ] Implement LoRaWAN for wider range
 
 
 
