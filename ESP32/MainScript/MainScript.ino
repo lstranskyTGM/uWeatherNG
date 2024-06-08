@@ -8,7 +8,6 @@
 
 // Libraries
 #include <time.h>                       // Standard C library for time-related functions
-#include <ESP32Time.h>                  // Time management for ESP32, source: https://github.com/fbiego/ESP32Time
 #include <Wire.h>                       // Wire Library for I2C communication, part of the Arduino core
 #include <BH1750.h>                     // Ambient light sensor library, source: https://github.com/claws/BH1750
 #include <Adafruit_Sensor.h>            // Adafruit Unified Sensor Driver, source: https://github.com/adafruit/Adafruit_Sensor
@@ -59,9 +58,6 @@ const char* topicSensors = "sensors/";
 HardwareSerial modemSS(1);                            // Instance of the HardwareSerial class to manage serial communication
 Botletics_modem_LTE modem = Botletics_modem_LTE();    // Instance of the LTE modem class
 
-// Declarations for ESP32 RTC
-//ESP32Time rtc;
-
 // Declarations for DeepSleep
 #define uS_TO_S_FACTOR 1000000ULL   // Conversion factor for micro seconds to seconds
 #define TIME_TO_SLEEP 5 * 60        // Time ESP32 will go to sleep (in seconds)
@@ -90,13 +86,14 @@ Adafruit_BME280 bme;    // BME280 Sensor (Temperature[°C], Humidity[%RH"], Pres
 Adafruit_SGP30 sgp;     // SGP30 Air Quality Sensor (TVOC[ppb], CO2[ppm])
 
 // Pin Definitions
-#define RAIN_ANALOG_PIN 35              // Rain Sensor Analog Pin (Rain[True/False])
-#define WIND_SPEED_DIGITAL_PIN 34       // KY-003 Hall Sensor Digital Pin (WindSpeed[km/h])
-#define WIND_DIRECTION_ANALOG_PIN 36    // Rotary Hall Angle Sensor Analog Pin (WindDirection[0-360°])
+#define RAIN_ANALOG_PIN 32              // Rain Sensor Analog Pin (Rain[True/False])
+#define WIND_SPEED_DIGITAL_PIN 35       // KY-003 Hall Sensor Digital Pin (WindSpeed[km/h])
+#define WIND_DIRECTION_ANALOG_PIN 33    // Rotary Hall Angle Sensor Analog Pin (WindDirection[0-360°])
 
 // Other variables
 volatile int rotationCount = 0;                // Counts Rotations (volatile for interrupts)
 unsigned long measurementDuration = 10000;     // Measurement duration in milliseconds (10 seconds)
+bool initalizedLTE = false;                    // If the LTE modem was successfully initialized
 
 // Defining Sensor Data Struct
 struct SensorData {
@@ -151,14 +148,19 @@ void setup() {
   initializeDevices();
 
   // Turn on GPS at first boot or if no GPS fix is detected
-  if (bootCount == 0 || getGPSStatus() == 0) {
+  if (bootCount == 1 || getGPSStatus() == 0) {
     toggleGPS(true);
   }
   // Implement check if there is still no fix after a long time
 
   // Read sensor data and publish it via MQTT
   SensorData data = readSensors();
-  mqttPublish(data);
+  if (initalizedLTE) {
+    printStatus("Publishing data...");
+    mqttPublish(data);
+  } else {
+    printStatus("Failed to publish data (no LTE modem)");
+  }
 
   // Configure and start deep sleep to save power
   configureDeepSleep(TIME_TO_SLEEP * uS_TO_S_FACTOR);
@@ -180,8 +182,8 @@ void initializeDevices() {
   Wire.begin();
 
   // Initialize individual sensors and modules
-//  initializeSH1106G();
-  initializeLTEModem();
+  //initializeSH1106G();
+  initalizedLTE = initializeLTEModem();
   initializeBH1750();
   initializeBME280();
   initializeRain();
@@ -196,10 +198,10 @@ void initializeDevices() {
  */
 bool initializeSH1106G() {
   if (display.begin(0x3c, true)) { 
-    Serial.println(F("SH1106G allocation successfull"));
+    Serial.println("SH1106G allocation successfull");
     return true;
   } else {
-    Serial.println(F("SH1106G allocation failed - check wiring"));
+    Serial.println("SH1106G allocation failed - check wiring");
     return false;
   }
 }
@@ -209,38 +211,38 @@ bool initializeSH1106G() {
  * @return True if device is successfully initialized, false otherwise.
  */
 bool initializeLTEModem() {
-  printStatus(F("Initializing LTE modem...(May take several seconds)"));
+  printStatus("Initializing LTE modem...(May take several seconds)");
 
   // SIM7000 takes about 3s to turn on and SIM7500 takes about 15s
   // Press reset button if the module is still turning on and the board doesn't find it.
   // When the module is on it should communicate right after pressing reset
 
   // Start at default SIM7000 shield baud rate
-  modemSS.begin(115200, SERIAL_8N1, TX, RX); // baud rate, protocol, ESP32 RX pin, ESP32 TX pin
+  //modemSS.begin(115200, SERIAL_8N1, TX, RX); // baud rate, protocol, ESP32 RX pin, ESP32 TX pin
 
-  //printStatus(F("Configuring to 9600 baud"));
-  //modemSS.println("AT+IPR=9600"); // Set baud rate
-  //delay(100); // Short pause to let the command run
-  //modemSS.begin(9600, SERIAL_8N1, TX, RX); // Switch to 9600
+  printStatus("Configuring to 9600 baud");
+  modemSS.println("AT+IPR=9600"); // Set baud rate
+  delay(100); // Short pause to let the command run
+  modemSS.begin(9600, SERIAL_8N1, TX, RX); // Switch to 9600
 
   // Check if modem is available
   if (! modem.begin(modemSS)) {
-    printStatus(F("LTE modem not found - check wiring"));
+    printStatus("LTE modem not found - check wiring");
     return false;
   } else {
-    printStatus(F("LTE modem initialized"));
+    printStatus("LTE modem initialized");
   }
 
   // Check type
   uint8_t type = modem.type();
-  printStatus(F("Modem is OK"));
-  printStatus(F("Found "));
+  printStatus("Modem is OK");
+  printStatus("Found ");
   switch (type) {
     case SIM7000:
-      printStatus(F("SIM7000")); 
+      printStatus("SIM7000"); 
       break;
     default:
-      printStatus(F("Unknown")); 
+      printStatus("Unknown"); 
       break;
   }
 
@@ -250,7 +252,7 @@ bool initializeLTEModem() {
   if (imeiLen > 0) {
     printStatus("Module IMEI: " + String(imei));
   } else {
-    printStatus(F("Failed to retrive IMEI"));
+    printStatus("Failed to retrive IMEI");
   }
 
   // Set modem to full functionality
@@ -269,10 +271,10 @@ bool initializeBH1750() {
   lightMeter.begin(BH1750::CONTINUOUS_HIGH_RES_MODE, 0x23);
   float lux = lightMeter.readLightLevel();
   if (lux != 0.0) { // Zero lux reading
-    printStatus(F("BH1750 sensor initialized"));
+    printStatus("BH1750 initialized");
     return true;
   } else {
-    printStatus(F("BH1750 zero lux detected - check wiring."));
+    printStatus("BH1750 zero lux detected - check wiring.");
     return false;
   }
 }
@@ -283,10 +285,10 @@ bool initializeBH1750() {
  */
 bool initializeBME280() {
   if (bme.begin(0x76)) {
-    printStatus(F("BME280 sensor initialization successful"));
+    printStatus("BME280 initialized");
     return true;
   } else {
-    printStatus(F("BME280 sensor not found - check wiring."));
+    printStatus("BME280 not found - check wiring.");
     return false;
   }
 }
@@ -298,12 +300,12 @@ bool initializeBME280() {
 bool initializeRain() {
   pinMode(RAIN_ANALOG_PIN, INPUT);
   int rainValue = analogRead(RAIN_ANALOG_PIN);
-    if (rainValue > 0 && rainValue < 4095) {
-        printStatus(F("Rain sensor initialized"));
-        return true;
+    if (rainValue >= 0 && rainValue <= 4095) {
+      printStatus("Rain initialized");
+      return true;
     } else {
-        printStatus(F("Rain sensor not found - check wiring"));
-        return false;
+      printStatus("Rain not found - check wiring");
+      return false;
     }
 }
 
@@ -313,15 +315,16 @@ bool initializeRain() {
  */
 bool initializeSGP30() {
   if (!sgp.begin()){
-    printStatus(F("SGP30 sensor not found - check wiring"));
+    printStatus("SGP30 not found - check wiring");
     return false;
   } else {
-    printStatus(F("SGP30 sensor initialized"));
-    Serial.print(F("Found SGP30 serial #"));
+    printStatus("SGP30 initialized");
+    Serial.print("Found SGP30 serial #");
     Serial.print(sgp.serialnumber[0], HEX);
     Serial.print(sgp.serialnumber[1], HEX);
     Serial.println(sgp.serialnumber[2], HEX);
 
+    /*
     // Humidity compensation
     sgp.setHumidity(getAbsoluteHumidity(bme.readTemperature(), bme.readHumidity()));
 
@@ -332,9 +335,11 @@ bool initializeSGP30() {
         printStatus("Baseline eCO2: 0x" + String(eCO2_base, HEX));
         printStatus("Baseline TVOC: 0x" + String(TVOC_base, HEX));
       } else {
-        printStatus(F("Failed to get baseline readings"));
+        printStatus("Failed to get baseline readings");
       }
     }
+    */
+
     return true;
   }
 }
@@ -346,10 +351,10 @@ bool initializeSGP30() {
 bool initializeHall() {
   pinMode(WIND_SPEED_DIGITAL_PIN, INPUT);
   if (true) {   // Add check
-    printStatus(F("KY-003 Hall sensor initialized"));
+    printStatus("KY-003 Hall initialized");
     return true;
   } else {
-    printStatus(F("KY-003 Hall sensor not found - check wiring"));
+    printStatus("KY-003 Hall not found - check wiring");
     return false;
   }
 }
@@ -362,11 +367,11 @@ bool initializeRotaryHall() {
 //  pinMode(WIND_DIRECTION_ANALOG_PIN, OUTPUT);
   pinMode(WIND_DIRECTION_ANALOG_PIN, INPUT);
   int sensorValue = analogRead(WIND_DIRECTION_ANALOG_PIN);
-  if (sensorValue >= 0 && sensorValue <= 1023) {   // Add check
-    printStatus(F("Rotary Hall sensor initialized"));
+  if (sensorValue >= 0 && sensorValue <= 1437) {   // Add check
+    printStatus("Rotary Hall initialized");
     return true;
   } else {
-    printStatus(F("Rotary Hall sensor not found - check wiring"));
+    printStatus("Rotary Hall not found - check wiring");
     return false;
   }
 }
@@ -381,43 +386,49 @@ SensorData readSensors() {
   // Create struct
   SensorData data;
 
-  printStatus(F("Reading sensor data.."));
+  printStatus("Reading sensor data..");
 
   // Read lightlevel (BH1750)
   data.lightLevel = lightMeter.readLightLevel();
   printStatus("LightLevel="+String(data.lightLevel)+"lux");
 
   // Read temperature, pressure, and humidity (BME280)
-  data.temperature  = bme.readTemperature();
+  data.temperature = bme.readTemperature();
   data.pressure = bme.readPressure() / 100.0F;
   data.humidity = bme.readHumidity();
-  printStatus("Temperature ="+String(data.temperature)+"°C");
+  printStatus("Temperature="+String(data.temperature)+"degC");
   printStatus("Pressure="+String(data.pressure)+"hPa");
   printStatus("Humidity="+String(data.humidity)+"%RH");
 
   // Read rain status (FC-37)
   data.rain = measureRain();
-  bIsRaining = data.rain;   // Set value for next boot
-  printStatus(data.rain ? F("Raining=TRUE") : F("Raining=NO"));
+  printStatus(data.rain ? "Raining=TRUE" : "Raining=FALSE");
 
   // Read air quality (SGP30)
   data.tvoc = sgp.TVOC;
   data.eco2 = sgp.eCO2; 
-  // unsigned int rawH2 = sgp.rawH2;
-  // unsigned int rawEthanol = sgp.rawEthanol;
+//  unsigned int rawH2 = sgp.rawH2;
+//  unsigned int rawEthanol = sgp.rawEthanol;
   printStatus("TVOC="+String(data.tvoc)+"ppb");
   printStatus("eC02="+String(data.eco2)+"ppm");
-  // printStatus("rawH2="+String(rawH2));
-  // printStatus("rawEthanol="+String(rawEthanol));
+//  printStatus("rawH2="+String(rawH2));
+//  printStatus("rawEthanol="+String(rawEthanol));
 
   // Read wind speed (KY-003)
   data.windSpeed = measureWindSpeed();
   printStatus("WindSpeed="+String(data.windSpeed)+"km/h");
 
   // Read wind direction
-  uint16_t windDirAnalogRead = analogRead(WIND_DIRECTION_ANALOG_PIN);
-  data.windDirection = map(windDirAnalogRead, 0, 1023, 0, 359);
-  printStatus("WindDirection="+String(data.windDirection)+"°");
+  uint16_t windDirAnalog = analogRead(WIND_DIRECTION_ANALOG_PIN);
+//  data.windDirection = map(windDirAnalog, 0, 3120, 0, 359);
+  if (windDirAnalog > 3120) {
+    data.windDirection = 0;
+  } else {
+    // 360 / 3120 (Max Value) = 0.115
+    data.windDirection = windDirAnalog * 0.115;
+  }
+  printStatus("WindDirectionAnalog="+String(windDirAnalog));
+  printStatus("WindDirection="+String(data.windDirection)+"deg");
 
   // Fetch GPS data if a valid fix is available
   GPSData gpsData = getGPSData();
@@ -425,11 +436,6 @@ SensorData readSensors() {
     data.latitude = gpsData.latitude;
     data.longitude = gpsData.longitude;
     data.altitude = gpsData.altitude;
-  } else {
-    // To indicate invalid data
-    data.latitude = -1;  
-    data.longitude = -1; 
-    data.altitude = -1;  
   }
 
   return data;
@@ -444,13 +450,13 @@ SensorData readSensors() {
  */
 bool measureRain() {
   int rainAnalogVal = analogRead(RAIN_ANALOG_PIN);
-  bool isRaining;
-  if (!bIsRaining && rainAnalogVal < 2700) {
-    isRaining = true;
-  } else if (bIsRaining && rainAnalogVal > 3400) {
-    isRaining = false;
+  printStatus("rainAnalog="+String(rainAnalogVal));
+  if (!bIsRaining && rainAnalogVal < 2500) {
+    bIsRaining = true;
+  } else if (bIsRaining && rainAnalogVal > 3000) {
+    bIsRaining = false;
   }
-  return isRaining;
+  return bIsRaining;
 }
 
 /**
@@ -475,9 +481,10 @@ float measureWindSpeed() {
   // Detach the interrupt to stop counting
   detachInterrupt(digitalPinToInterrupt(WIND_SPEED_DIGITAL_PIN));
 
-  // Assuming each rotation is 1 meter of wind travel, adjust as per your anemometer's spec
-  // windSpeed = (rotationCount * 1.0 /* meters per rotation */) / (5 /* measurement interval in seconds */);
-  return calculateWindSpeed(rotationCount, measurementDuration);
+  printStatus("rotationCount=" + String(rotationCount));
+
+  // Calculate the wind speed
+  return calculateWindSpeed(rotationCount);
 } 
 
 // Network Functions
@@ -498,19 +505,19 @@ void mqttPublish(SensorData data) {
   modem.MQTT_setParameter("PASSWORD", MQTT_PASSWORD);
   modem.MQTT_setParameter("CLIENTID", MQTT_CLIENTID);
 
-  printStatus(F("Connecting to MQTT broker..."));
+  printStatus("Connecting to MQTT broker...");
   if (! modem.MQTT_connect(true)) {
-    printStatus(F("MQTT broker connect failed"));
+    printStatus("MQTT broker connect failed");
     // Closes connection on failure
     modem.openWirelessConnection(false);
     return;
   } else { 
-    printStatus(F("MQTT broker connected"));
+    printStatus("MQTT broker connected");
   }
 
   // Getting current time as Unix timestamp
-  //time_t now;
-  //time(&now);  // Get the current time as a time_t object
+//  time_t now;
+//  time(&now);  // Get the current time as a time_t object
 
   // Configure the topic string with the station ID
   String topic = String(topicSensors) + String(WeatherStationID);
@@ -518,25 +525,34 @@ void mqttPublish(SensorData data) {
   // Add checks for building Line Protocol
 
   // Build the payload in InfluxDB Line Protocol format
-  String lineProtocol = "weather,stationID=" + String(WeatherStationID) + " "
-                        + String("latitude=") + data.latitude + ","
-                        + String("longitude=") + data.longitude + ","
-                        + String("altitude=") + data.altitude + ","
-                        + String("temperature=") + data.temperature + ","
-                        + String("pressure=") + data.pressure + ","
-                        + String("humidity=") + data.humidity + ","
-                        + String("rain=") + (data.rain ? "true" : "false") + ","
-                        + String("lightLevel=") + data.lightLevel + ","
-                        + String("windSpeed=") + data.windSpeed + ","
-                        + String("windDirection=") + data.windDirection + ","
-                        + String("tvoc=") + data.tvoc + ","
-                        + String("eco2=") + data.eco2;
+  String lineProtocol = "weather,stationID=" + String(WeatherStationID) + " ";
+
+  if (!(data.latitude == 0 && data.longitude == 0 && data.altitude == 0)) {
+    lineProtocol += String("latitude=") + data.latitude + ","
+                  + String("longitude=") + data.longitude + ","
+                  + String("altitude=") + data.altitude + ",";
+  }
+  lineProtocol += String("temperature=") + data.temperature + ","
+                + String("pressure=") + data.pressure + ","
+                + String("humidity=") + data.humidity + ","
+                + String("rain=") + (data.rain ? "true" : "false") + ","
+                + String("lightLevel=") + data.lightLevel + ","
+                + String("windSpeed=") + data.windSpeed + ","
+                + String("windDirection=") + data.windDirection;
+  if (!(data.tvoc == 0 && data.eco2 == 0)) {
+    lineProtocol += "," + String("tvoc=") + data.tvoc + ","
+                  + String("eco2=") + data.eco2;
+  }
+
+  // Convert String to char array
+  char lineProtocolChar[512];
+  lineProtocol.toCharArray(lineProtocolChar, lineProtocol.length() + 1);
 
   // Publish MQTT Data
-  if (!modem.MQTT_publish(topic.c_str(), lineProtocol.c_str(), lineProtocol.length(), qos_level, retain_messages)) {
-    printStatus(F("Publish failed")); 
+  if (!modem.MQTT_publish(topic.c_str(), lineProtocolChar, lineProtocol.length(), qos_level, retain_messages)) {
+    printStatus("Publish failed"); 
   } else {
-    printStatus(F("Publish successful")); 
+    printStatus("Publish successful"); 
   }
 
   // Close Connection (MQTT Broker & wireless)
@@ -570,19 +586,20 @@ bool toggleGPS(bool status) {
  */
 int8_t getGPSStatus() {
   int8_t stat;
+  printStatus("Getting GPS Status...");
 
   // Check GPS fix
   stat = modem.GPSstatus();
   if (stat < 0) {
-    printStatus(F("Failed to query"));
+    printStatus("Failed to query");
   } else if (stat == 0) {
-    printStatus(F("GPS off"));
+    printStatus("GPS off");
   } else if (stat == 1) {
-    printStatus(F("No fix"));
+    printStatus("No fix");
   } else if (stat == 2) {
-    printStatus(F("2D fix"));
+    printStatus("2D fix");
   } else if (stat == 3) {
-    printStatus(F("3D fix"));
+    printStatus("3D fix");
   }
   return stat;
 }
@@ -595,6 +612,8 @@ GPSData getGPSData() {
   GPSData gpsData;
   float latitude, longitude, speed_kph, heading, altitude;
 
+  printStatus("Getting GPS Data...");
+
   // For UTC time parsing.
   /* 
    float second;
@@ -603,15 +622,16 @@ GPSData getGPSData() {
   */
 
   // For UTC time data
-  // if (modem.getGPS(&latitude, &longitude, &speed_kph, &heading, &altitude, &year, &month, &day, &hour, &minute, &second)) {
+// if (modem.getGPS(&latitude, &longitude, &speed_kph, &heading, &altitude, &year, &month, &day, &hour, &minute, &second)) {
 
   // Check for GPS status before
   if (getGPSStatus() == 3) {
+    printStatus("Got GPS Fix");
     if (modem.getGPS(&latitude, &longitude, &speed_kph, &heading, &altitude)) { // Use this line if UTC time is not needed
       //Serial.println(F("---------------------"));
-      printStatus(F("GPS Data Retrieved Successfully"));
-      printStatus("Latitude: " + String(latitude, 6) + "°");
-      printStatus("Longitude: " + String(longitude, 6) + "°");
+      printStatus("GPS Data Retrieved Successfully");
+      printStatus("Latitude: " + String(latitude, 6) + "deg");
+      printStatus("Longitude: " + String(longitude, 6) + "deg");
       //Serial.print(F("Speed: ")); Serial.println(speed_kph);
       //Serial.print(F("Heading: ")); Serial.println(heading);
       printStatus("Altitude: " + String(altitude) + "m");
@@ -691,7 +711,7 @@ bool toggleNTP(bool status) {
  * @param sleepTime Time to sleep in microseconds before waking up.
  */
 void configureDeepSleep(int sleepTime) {
-  printStatus(F("Set DeepSleep WakeUp.."));
+  printStatus("Set DeepSleep WakeUp..");
   esp_sleep_enable_timer_wakeup(sleepTime);
 }
 
@@ -700,7 +720,7 @@ void configureDeepSleep(int sleepTime) {
  * The ULP (Ultra-Low-Power) coprocessor remains active and can perform tasks during deep sleep.
  */
 void startDeepSleep() {
-  printStatus(F("Starting DeepSleep.."));
+  printStatus("Starting DeepSleep..");
   Serial.flush(); // Waits for the transmisson of outgoing serial data to complete
   esp_deep_sleep_start();
 }
@@ -854,20 +874,14 @@ uint32_t getAbsoluteHumidity(float temperature, float humidity) {
 }
 
 /**
- * Calculates wind speed based on the number of rotations of an anemometer and the duration of measurement.
- * Assumes each rotation corresponds to a unit distance (e.g., 1 meter) traveled by the wind.
- * @param rotations The number of rotations detected.
- * @param duration The duration of the measurement in milliseconds.
- * @return The wind speed in meters per second.
+ * Calculates wind speed based on the number of rotations and a calibrated speed factor.
+ * @param rotations The number of rotations detected
+ * @return The wind speed in km/h
  */
-float calculateWindSpeed(int rotations, unsigned long duration) {
-  // Convert duration from milliseconds to seconds
-  float durationInSeconds = duration / 1000.0;
-  // Assuming each rotation is 1 meter of wind travel, adjust as per your anemometer's spec
-  float distancePerRotation = 1.0;
-  float speedMetersPerSecond = (rotations * distancePerRotation) / durationInSeconds;
-  // Convert m/s to km/h
-  return speedMetersPerSecond * 3.6;
+float calculateWindSpeed(int rotations) {
+  float speedFactor = 0.7;
+  float speedKmPerHour = rotations * speedFactor;
+  return speedKmPerHour;
 }
 
 // Interrupt Functions
