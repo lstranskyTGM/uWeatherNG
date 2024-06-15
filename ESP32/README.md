@@ -81,7 +81,7 @@ The micro SD card reader module is used to configure the Main Script.
 
 [Buy here](https://www.az-delivery.de/en/products/copy-of-spi-reader-micro-speicherkartenmodul-fur-arduino)
 
-### SIM700E NB-IoT Module
+### SIM7000E NB-IoT Module
 
 The SIM7000E NB-IoT Module is used to connect the ESP32 to the internet, sending the data to a MQTT broker.
 It also has a GPS module that can be used to get the current location of the ESP32.
