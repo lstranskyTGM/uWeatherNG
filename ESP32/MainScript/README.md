@@ -12,10 +12,9 @@
   
 ## Possible Extensions
 
-- [ ] Implement millis() instead of delay()
-- [ ] Implement Start up delay to allow sensors to warm up
-- [ ] Implement power usage by controlling digital pins
-- [ ] Implement LoRaWAN for wider range of communication (2-15 km)
+- [ ] Implement `millis()` instead of `delay()`
+- [ ] Implement startup delay to allow sensors to warm up
+- [ ] Optimize power usage by controlling digital pins
 - [ ] Implement local storage for data
 - [ ] Implement logging file for errors
 - [ ] Implement configuration file for settings
