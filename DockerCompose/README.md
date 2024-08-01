@@ -28,7 +28,7 @@ Set credentials and environment variables in the `docker-compose.yml` file.
 
 Configure the tunnel `your-tunnel-id.json` and `config.yml` files.
 
-### mosquitto (Optional)
+### Mosquitto (Optional)
 
 Configure the `mosquitto.conf` file with the desired settings.
 
@@ -42,7 +42,8 @@ Change any other settings as needed.
 
 The system includes the following components:
 
-- **Cloudflared:** A tunneling service that securely exposes the local server to the internet.
+- **Cloudflared: (Optional)** A tunneling service that securely exposes the local server to the internet.
+- **Mosquitto: (Optional)** An MQTT broker that enables real-time communication between IoT devices.
 - **Telegraf:** A plugin-driven server agent for collecting and reporting metrics.
 - **InfluxDB:** A time-series database that stores data points.
 - **Grafana:** A visualization tool that creates dashboards for monitoring and analyzing data.
@@ -73,3 +74,5 @@ weather,location=Vienna temperature=25,humidity=50,pressure=1013
 ```
 
 ## Possible Extensions
+
+- [ ] Add dashboard data for grafana
