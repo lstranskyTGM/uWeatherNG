@@ -1,41 +1,62 @@
-# Hardware Box:
+# Hardware Box
 
 <p align="center">
-    <img src="https://github.com/lstranskyTGM/uWeather/blob/main/HardwareBox/img/uWeatherBox1.jpg?raw=true" alt="database" width="600" align="center">
+    <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/weatherSystem1.jpg?raw=true" alt="database" width="600" align="center">
 </p>
 
-The hardware case for all the components of the uWeather project was designed in Fusion 360 and printed with an Original Prusa i3 MK3S+ 3D-printer. There are 3 parts in total. The top in which all the sensors and an OLED Display is mounted. The middle part functions as an seperation and on the bottom attached is the ESP32 and a circuit board with the Powerbank underneath it. 
+## Overview
 
-The Prototyp was printed using a PETG filament, this makes everything waterproof, UV-proof and resistant to the weather. 
+The uWeatherNG project’s hardware components were designed using Fusion 360 and 3D printed with an Original Prusa i3 MK3S+ printer.
 
-Everything is mounted with 4 screws.  
+This system is modular and easy to set up, consisting of several main parts:
 
-The Rain Sensor is directly glued on the exterior of the case. Except the light sensor and the OLED Display that have a plexiglass cover. 
+- **Main Box:** This is the heart of the system, containing the ESP32 microcontroller, OLED display, LTE and GPS modules, SD card reader, and a power bank. It handles all the data processing and transmission.
 
-Air vents are also used to prevent misinterpretation of the BME280 Sensor.
+- **Sensor Box:** This box holds all the environmental sensors, keeping them safe while they collect weather data.
 
-Cable connections are realized with dupont connectors.
+- **Cable Box:** A dedicated space for organizing and storing all the cables, keeping the setup tidy.
 
-## Other Images:
+- **Anemometer and Wind Vane:** These tools measure wind speed and direction, which are key parts of weather monitoring.
+
+- **Antenna Mount:** This part holds the antenna in place, ensuring good signal strength for data communication.
+
+The system is built using connectors and aluminum tubes, which make it easy to assemble and disassemble, allowing for quick deployment in different locations.
+
+**Material and Durability:** The prototype is printed with PETG filament, which is waterproof, UV-resistant, and weatherproof, making it durable for outdoor use.
+
+**Additional Features:**
+
+- **Air Vents:** These vents are included to allow proper airflow around the sensors, ensuring they measure accurate environmental conditions without being influenced by any potential heat build-up inside the enclosure.
+  
+- **Plexiglass Covers:** These protect the sensors and modules from rain, while still allowing them to function properly.
+  
+- **Dupont Connectors:** These are used for all the cable connections, making the setup easy to put together and take apart.
+
+Overall, the uWeatherNG system is designed to be strong, reliable, and able to withstand different weather conditions, making it perfect for ongoing weather monitoring.
+
+## Other Images
 
 <p align="center">
-    <img src="https://github.com/lstranskyTGM/uWeather/blob/main/HardwareBox/img/uWeatherBox2.jpg?raw=true" alt="database" width="400" align="center">
-    <img src="https://github.com/lstranskyTGM/uWeather/blob/main/HardwareBox/img/uWeatherBox3.jpg?raw=true" alt="database" width="400" align="center">
-    <br>
-    <img src="https://github.com/lstranskyTGM/uWeather/blob/main/HardwareBox/img/uWeatherBox4.jpg?raw=true" alt="database" width="400" align="center">
-    <img src="https://github.com/lstranskyTGM/uWeather/blob/main/HardwareBox/img/uWeatherBox5.jpg?raw=true" alt="database" width="400" align="center">
+    <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/weatherSystem4.jpg?raw=true" alt="database" width="300" align="center">
+    <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/cableBox1.jpg?raw=true" alt="database" width="300" align="center">
+    <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/case1.jpg?raw=true" alt="database" width="300" align="center">
+    <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/connectors1.jpg?raw=true" alt="database" width="400" align="center">
+    <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/sensorBox1.jpg?raw=true" alt="database" width="400" align="center">
+    <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/sensorBox2.jpg?raw=true" alt="database" width="400" align="center">
+    <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/weatherSystem3.jpg?raw=true" alt="database" width="400" align="center">
 </p>
 
-# ToDo:
+# ToDo
 
-- [x] ~~Simple and compact design~~
+- [x] ~~Modular System~~
 - [x] ~~Water resistant~~
 - [x] ~~uWeather Logo~~
+- [x] ~~Larger Display~~u
 
-## Possible Extensions:
+## Possible Extensions
 
-- [ ] More screws to hold the heavy powerbank
-- [ ] larger Display
+- [ ] Seal Connections between the parts
+- [ ] MainBox Angled Top for better rain runoff
 
 
 
