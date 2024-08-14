@@ -49,24 +49,25 @@ This project was undertaken during the fourth year at TGM (Technologisches Gewer
 
 ## Implemented Functions
 
-- Swithed to LTE instead of WiFi
-- Added an Anemometer to measure wind speed
-- Added a Wind Vane to measure wind direction
-- Added an Air Quality Sensor to measure air quality
-- Implemented Grafana to display data from the database
-- Used the MQTT protocol for data transmission
-- Replaced the MySQL database with a InfluxDB database
+- [x] Swithed to LTE instead of WiFi
+- [x] Added an Anemometer to measure wind speed
+- [x] Added a Wind Vane to measure wind direction
+- [x] Added an Air Quality Sensor to measure air quality
+- [x] Implemented Grafana to display data from the database
+- [x] Used the MQTT protocol for data transmission
+- [x] Replaced the MySQL database with a InfluxDB database
 
 ## Unimplemented Functions
 
-- Micro SD Card Reader Module (hardware implemented, code not written)
+- [ ] Micro SD Card Reader Module (hardware implemented, code not written)
+
+## Implemented Functions
 
 ## Possible Extensions
 
-- Switch to LoRaWAN for extended range and cost-effective data transfer
-- Add a Rain Gauge to measure rainfall
-- Disable unused digital pins to conserve power when not needed
-- Develop a custom PCB for the ESP32 and all sensors
-- Replace the ESP32 Dev Module with a more compact and efficient ESP32 board
-- Implement ESPHome / Home Assistant
-- ...
+- [ ] Switch to LoRaWAN for extended range and cost-effective data transfer
+- [ ] Add a Rain Gauge to measure rainfall
+- [ ] Disable unused digital pins to conserve power when not needed
+- [ ] Develop a custom PCB for the ESP32 and all sensors
+- [ ] Replace the ESP32 Dev Module with a more compact and efficient ESP32 board
+- [ ] Implement ESPHome / Home Assistant
