@@ -38,32 +38,32 @@ Overall, the uWeatherNG system is designed to be strong, reliable, and able to w
 
 ## Other Images
 
-<table style="border-collapse: collapse; margin: auto;">
+<table>
   <tr>
-    <td style="padding: 15px; text-align: center;">
-      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/weatherSystem4.jpg?raw=true" alt="weatherSystem4.jpg" width="300" style="border-radius: 10px;">
+    <td align="center">
+      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/weatherSystem4.jpg?raw=true" alt="weatherSystem4.jpg" width="300">
     </td>
-    <td style="padding: 15px; text-align: center;">
-      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/cableBox1.jpg?raw=true" alt="cableBox1.jpg" width="300" style="border-radius: 10px;">
+    <td align="center">
+      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/cableBox1.jpg?raw=true" alt="cableBox1.jpg" width="300">
     </td>
-    <td style="padding: 15px; text-align: center;">
-      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/case1.jpg?raw=true" alt="case1.jpg" width="300" style="border-radius: 10px;">
+    <td align="center">
+      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/case1.jpg?raw=true" alt="case1.jpg" width="300">
     </td>
   </tr>
   <tr>
-    <td style="padding: 15px; text-align: center;">
-      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/connectors1.jpg?raw=true" alt="connectors1.jpg" width="300" style="border-radius: 10px;">
+    <td align="center">
+      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/connectors1.jpg?raw=true" alt="connectors1.jpg" width="300">
     </td>
-    <td style="padding: 15px; text-align: center;">
-      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/sensorBox1.jpg?raw=true" alt="sensorBox1.jpg" width="300" style="border-radius: 10px;">
+    <td align="center">
+      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/sensorBox1.jpg?raw=true" alt="sensorBox1.jpg" width="300">
     </td>
-    <td style="padding: 15px; text-align: center;">
-      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/sensorBox2.jpg?raw=true" alt="sensorBox2.jpg" width="300" style="border-radius: 10px;">
+    <td align="center">
+      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/sensorBox2.jpg?raw=true" alt="sensorBox2.jpg" width="300">
     </td>
   </tr>
   <tr>
-    <td style="padding: 15px; text-align: center;" colspan="3">
-      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/weatherSystem3.jpg?raw=true" alt="weatherSystem3.jpg" width="300" style="border-radius: 10px;">
+    <td align="center" colspan="3">
+      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/weatherSystem3.jpg?raw=true" alt="weatherSystem3.jpg" width="300">
     </td>
   </tr>
 </table>
