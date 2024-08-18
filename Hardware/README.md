@@ -1,7 +1,7 @@
 # Hardware Box
 
-<p align="center" style="padding: 15px;">
-    <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/weatherSystem1.jpg?raw=true" alt="weatherSystem1.jpg" width="600" style="border-radius: 10px;">
+<p align="center">
+    <img src="./img/weatherSystem1.jpg" alt="weatherSystem1.jpg" width="600">
 </p>
 
 ## Overview
@@ -41,29 +41,29 @@ Overall, the uWeatherNG system is designed to be strong, reliable, and able to w
 <table>
   <tr>
     <td align="center">
-      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/weatherSystem4.jpg?raw=true" alt="weatherSystem4.jpg" width="300">
+      <img src="./img/weatherSystem4.jpg" alt="weatherSystem4.jpg" width="300">
     </td>
     <td align="center">
-      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/cableBox1.jpg?raw=true" alt="cableBox1.jpg" width="300">
+      <img src="./img/cableBox1.jpg" alt="cableBox1.jpg" width="300">
     </td>
     <td align="center">
-      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/case1.jpg?raw=true" alt="case1.jpg" width="300">
+      <img src="./img/case1.jpg" alt="case1.jpg" width="300">
     </td>
   </tr>
   <tr>
     <td align="center">
-      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/connectors1.jpg?raw=true" alt="connectors1.jpg" width="300">
+      <img src="./img/connectors1.jpg" alt="connectors1.jpg" width="300">
     </td>
     <td align="center">
-      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/sensorBox1.jpg?raw=true" alt="sensorBox1.jpg" width="300">
+      <img src="./img/sensorBox1.jpg" alt="sensorBox1.jpg" width="300">
     </td>
     <td align="center">
-      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/sensorBox2.jpg?raw=true" alt="sensorBox2.jpg" width="300">
+      <img src="./img/sensorBox2.jpg" alt="sensorBox2.jpg" width="300">
     </td>
   </tr>
   <tr>
     <td align="center" colspan="3">
-      <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/Hardware/img/weatherSystem3.jpg?raw=true" alt="weatherSystem3.jpg" width="300">
+      <img src="./img/weatherSystem3.jpg" alt="weatherSystem3.jpg" width="300">
     </td>
   </tr>
 </table>

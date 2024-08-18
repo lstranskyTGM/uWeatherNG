@@ -7,7 +7,7 @@ In the test scripts all functions for the ESP32 are tested seperately. This make
 ## Main Script
 
 <p align="center">
-    <img src="https://github.com/lstranskyTGM/uWeatherNG/blob/main/ESP32/img/codeLogic.png?raw=true" alt="codeLogic" width="400" align="center">
+    <img src="./img/codeLogic.png" alt="codeLogic" width="400" align="center">
 </p>
 
 The ESP32 script initiates by setting up various sensors and modules, including GPS, and collecting environmental data. It then attempts to transmit this information via MQTT over an LTE connection. If the connection is established, the collected data is published to a designated topic on an MQTT broker. After transmission, the ESP32 enters a deep sleep mode to conserve energy, periodically waking to update and resend data. Throughout this process, all status updates and messages are displayed both on the Serial Monitor and an OLED display. This configuration ensures continuous, efficient monitoring of environmental conditions with minimal human intervention.
